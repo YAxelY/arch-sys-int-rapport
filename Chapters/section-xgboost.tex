@@ -1,0 +1,394 @@
+\section{XGBoost}
+
+XGBoost (\textit{eXtreme Gradient Boosting}) représente l'aboutissement de plusieurs décennies d'évolution dans le domaine des méthodes d'ensemble. Développé par Tianqi Chen en 2014 et formalisé dans sa publication avec Carlos Guestrin en 2016, XGBoost a révolutionné le paysage du machine learning en dominant systématiquement les compétitions Kaggle et en devenant l'algorithme de référence pour les données tabulaires structurées. Son succès repose sur une combinaison astucieuse d'innovations théoriques et d'optimisations techniques qui en font un outil à la fois puissant et efficace.
+
+\subsection{Principe du boosting versus bagging}
+
+Pour comprendre XGBoost, il est essentiel de saisir la différence fondamentale entre les deux grandes familles de méthodes d'ensemble : le bagging et le boosting.
+
+\subsubsection{Le bagging : agrégation parallèle}
+
+Le bagging (\textit{Bootstrap AGGregatING}), utilisé par Random Forest, adopte une stratégie de construction parallèle et indépendante. Le principe est le suivant :
+
+\begin{enumerate}
+    \item Générer $B$ échantillons bootstrap en tirant aléatoirement $n$ observations avec remplacement depuis l'ensemble d'entraînement
+    \item Entraîner indépendamment $B$ modèles sur ces échantillons
+    \item Agréger les prédictions par vote majoritaire (classification) ou moyenne (régression)
+\end{enumerate}
+
+L'efficacité du bagging repose sur un principe statistique fondamental : si l'on dispose de $B$ estimateurs indépendants, chacun ayant une variance $\sigma^2$, la variance de leur moyenne est $\frac{\sigma^2}{B}$. Ainsi, l'agrégation réduit la variance du modèle sans augmenter significativement le biais. Chaque modèle dans l'ensemble a un poids égal, et l'objectif principal est de réduire la variabilité des prédictions.
+
+\subsubsection{Le boosting : apprentissage séquentiel adaptatif}
+
+Le boosting adopte une philosophie radicalement différente : au lieu de construire des modèles indépendants en parallèle, il construit une séquence de modèles où chaque nouveau modèle se concentre sur les erreurs commises par ses prédécesseurs.
+
+Le processus séquentiel du boosting peut être formalisé ainsi. Soit $F_0(x)$ une prédiction initiale (typiquement la moyenne pour la régression). À chaque itération $m = 1, 2, ..., M$ :
+
+\begin{enumerate}
+    \item On identifie les observations mal prédites par le modèle actuel $F_{m-1}(x)$
+    \item On entraîne un nouveau modèle faible $h_m(x)$ pour corriger ces erreurs
+    \item On met à jour le modèle : $F_m(x) = F_{m-1}(x) + \alpha_m h_m(x)$
+\end{enumerate}
+
+où $\alpha_m$ est un coefficient de pondération. Le modèle final est une combinaison pondérée :
+
+\begin{equation}
+F(x) = \sum_{m=1}^{M} \alpha_m h_m(x)
+\end{equation}
+
+Cette approche séquentielle permet de réduire progressivement le biais en ajoutant des modèles qui ciblent spécifiquement les cas difficiles, tandis que le bagging réduit principalement la variance.
+
+\subsubsection{Comparaison théorique}
+
+Les différences fondamentales entre bagging et boosting se manifestent à plusieurs niveaux :
+
+\textbf{Construction :} Le bagging construit tous les modèles indépendamment et simultanément, permettant une parallélisation naturelle. Le boosting construit les modèles séquentiellement, chacun dépendant des précédents, ce qui limite intrinsèquement la parallélisation du processus d'entraînement.
+
+\textbf{Pondération :} Dans le bagging, tous les modèles ont un poids égal dans la prédiction finale. Dans le boosting, les modèles sont pondérés différemment selon leur performance, et les modèles tardifs se concentrent sur les cas difficiles.
+
+\textbf{Compromis biais-variance :} Le bagging réduit principalement la variance sans affecter significativement le biais, ce qui le rend particulièrement efficace avec des modèles à faible biais mais forte variance comme les arbres profonds. Le boosting réduit à la fois le biais (en combinant des modèles faibles pour créer un modèle fort) et peut contrôler la variance via la régularisation, mais nécessite plus de précautions pour éviter le surapprentissage.
+
+\textbf{Robustesse :} Le bagging est naturellement robuste au surapprentissage grâce à l'agrégation. Le boosting est plus sensible au surapprentissage car les modèles successifs peuvent commencer à mémoriser le bruit des données, surtout si les itérations sont trop nombreuses ou les modèles trop complexes.
+
+\textbf{Gestion du déséquilibre :} Pour la détection de fraude avec un déséquilibre extrême, le boosting présente un avantage : en se concentrant itérativement sur les erreurs, il alloue naturellement plus d'attention aux exemples minoritaires difficiles à classifier, alors que le bagging traite toutes les observations de manière plus uniforme.
+
+\subsection{Gradient boosting : l'idée d'apprentissage séquentiel}
+
+Le gradient boosting, formalisé par Jerome Friedman en 2001, généralise le boosting en l'exprimant comme une optimisation numérique dans l'espace des fonctions. Cette reformulation élégante fournit un cadre unifié pour différentes tâches d'apprentissage.
+
+\subsubsection{Formulation comme problème d'optimisation}
+
+L'objectif du gradient boosting est de minimiser une fonction de perte $L(y, F(x))$ en construisant itérativement le modèle $F(x)$ par additions successives de fonctions :
+
+\begin{equation}
+F_m(x) = F_{m-1}(x) + h_m(x)
+\end{equation}
+
+où $h_m(x)$ est un modèle faible (typiquement un arbre de décision peu profond) ajouté à l'itération $m$.
+
+Le problème se formule ainsi : trouver $F^*(x)$ qui minimise l'espérance de la perte :
+
+\begin{equation}
+F^*(x) = \arg\min_F \mathbb{E}_{x,y}[L(y, F(x))]
+\end{equation}
+
+Dans la pratique, on minimise la perte empirique sur l'ensemble d'entraînement :
+
+\begin{equation}
+F^*(x) = \arg\min_F \sum_{i=1}^{n} L(y_i, F(x_i))
+\end{equation}
+
+\subsubsection{L'analogie avec la descente de gradient}
+
+L'intuition clé du gradient boosting est l'analogie avec la descente de gradient en optimisation numérique. En descente de gradient classique, pour minimiser une fonction $J(\theta)$, on met à jour itérativement les paramètres :
+
+\begin{equation}
+\theta_m = \theta_{m-1} - \eta \frac{\partial J}{\partial \theta}\Big|_{\theta_{m-1}}
+\end{equation}
+
+où $\eta$ est le taux d'apprentissage et le gradient indique la direction de plus forte augmentation.
+
+De manière analogue, en gradient boosting, on cherche à minimiser la perte par rapport aux prédictions $F(x)$ plutôt qu'aux paramètres. À chaque itération, on calcule le gradient de la perte par rapport aux prédictions actuelles :
+
+\begin{equation}
+g_i = \frac{\partial L(y_i, F(x_i))}{\partial F(x_i)}\Big|_{F=F_{m-1}}
+\end{equation}
+
+Ces gradients, appelés \textbf{pseudo-résidus}, indiquent la direction dans laquelle les prédictions doivent être ajustées pour réduire la perte. On entraîne alors un nouvel arbre $h_m(x)$ pour approximer ces gradients négatifs, effectuant ainsi une descente de gradient dans l'espace fonctionnel.
+
+\subsubsection{Algorithme du gradient boosting}
+
+L'algorithme complet du gradient boosting se déroule comme suit :
+
+\textbf{Initialisation :} On initialise le modèle avec une prédiction constante qui minimise la perte :
+
+\begin{equation}
+F_0(x) = \arg\min_\gamma \sum_{i=1}^{n} L(y_i, \gamma)
+\end{equation}
+
+Pour la régression avec perte quadratique, $F_0(x) = \bar{y}$ (moyenne). Pour la classification avec perte logistique, $F_0(x) = \log\left(\frac{p}{1-p}\right)$ où $p$ est la proportion de la classe positive.
+
+\textbf{Itérations de boosting ($m = 1$ à $M$) :}
+
+\begin{enumerate}
+    \item \textbf{Calculer les pseudo-résidus} pour chaque observation :
+    \begin{equation}
+    r_{im} = -\left[\frac{\partial L(y_i, F(x_i))}{\partial F(x_i)}\right]_{F=F_{m-1}}
+    \end{equation}
+    
+    \item \textbf{Entraîner un arbre de régression} $h_m(x)$ pour prédire ces pseudo-résidus $r_{im}$. Cet arbre partitionne l'espace des features en $J$ régions disjointes $R_{jm}$, $j = 1, ..., J$.
+    
+    \item \textbf{Pour chaque région terminale (feuille)} $R_{jm}$, calculer le coefficient optimal :
+    \begin{equation}
+    \gamma_{jm} = \arg\min_\gamma \sum_{x_i \in R_{jm}} L(y_i, F_{m-1}(x_i) + \gamma)
+    \end{equation}
+    
+    \item \textbf{Mettre à jour le modèle} avec un taux d'apprentissage $\eta$ (shrinkage) :
+    \begin{equation}
+    F_m(x) = F_{m-1}(x) + \eta \sum_{j=1}^{J} \gamma_{jm} \mathbb{1}(x \in R_{jm})
+    \end{equation}
+\end{enumerate}
+
+\textbf{Prédiction finale :}
+
+\begin{equation}
+\hat{y} = F_M(x) = F_0(x) + \sum_{m=1}^{M} \eta h_m(x)
+\end{equation}
+
+Le paramètre $\eta$ (learning rate ou taux d'apprentissage), typiquement entre 0.01 et 0.3, contrôle la contribution de chaque arbre. Une valeur faible nécessite plus d'arbres mais améliore généralement la généralisation en rendant l'apprentissage plus prudent. C'est un mécanisme de régularisation fondamental appelé \textit{shrinkage}.
+
+\subsubsection{Exemples de fonctions de perte}
+
+Le gradient boosting est flexible et peut optimiser différentes fonctions de perte selon la tâche :
+
+\textbf{Régression - Perte quadratique (L2) :}
+\begin{equation}
+L(y, F(x)) = \frac{1}{2}(y - F(x))^2 \quad \Rightarrow \quad r_i = y_i - F_{m-1}(x_i)
+\end{equation}
+Les pseudo-résidus sont simplement les résidus classiques.
+
+\textbf{Classification binaire - Perte logistique (log-loss) :}
+\begin{equation}
+L(y, F(x)) = \log(1 + e^{-2yF(x)}) \quad \text{avec } y \in \{-1, +1\}
+\end{equation}
+\begin{equation}
+r_i = \frac{2y_i}{1 + e^{2y_i F_{m-1}(x_i)}}
+\end{equation}
+
+\textbf{Régression robuste - Perte absolue (L1) :}
+\begin{equation}
+L(y, F(x)) = |y - F(x)| \quad \Rightarrow \quad r_i = \text{sign}(y_i - F_{m-1}(x_i))
+\end{equation}
+Plus robuste aux outliers que L2.
+
+Cette flexibilité permet d'adapter le gradient boosting à des problèmes spécifiques, y compris la détection de fraude où l'on peut définir des fonctions de perte personnalisées intégrant les coûts métier asymétriques.
+
+\subsection{Spécificités de XGBoost}
+
+XGBoost ne se contente pas d'implémenter le gradient boosting classique ; il introduit de nombreuses innovations qui en font un algorithme d'exception.
+
+\subsubsection{Régularisation avancée}
+
+Contrairement au gradient boosting traditionnel, XGBoost intègre une régularisation explicite dans sa fonction objectif. À chaque itération $m$, au lieu de simplement minimiser la perte, XGBoost minimise :
+
+\begin{equation}
+\text{Obj}^{(m)} = \sum_{i=1}^{n} L(y_i, F_{m-1}(x_i) + h_m(x_i)) + \Omega(h_m)
+\end{equation}
+
+où $\Omega(h_m)$ est un terme de régularisation qui pénalise la complexité de l'arbre $h_m$ :
+
+\begin{equation}
+\Omega(h) = \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T} w_j^2 + \alpha \sum_{j=1}^{T} |w_j|
+\end{equation}
+
+Dans cette formulation :
+\begin{itemize}
+    \item $T$ est le nombre de feuilles (régions terminales) de l'arbre
+    \item $w_j$ est le score de prédiction dans la feuille $j$
+    \item $\gamma$ contrôle la pénalité sur le nombre de feuilles (encourageant des arbres plus simples)
+    \item $\lambda$ contrôle la régularisation L2 (ridge) sur les scores des feuilles
+    \item $\alpha$ contrôle la régularisation L1 (lasso) sur les scores des feuilles
+\end{itemize}
+
+Cette régularisation explicite combat efficacement le surapprentissage, problème majeur du boosting classique. En pénalisant les arbres trop complexes et les scores extrêmes, XGBoost maintient un équilibre entre ajustement aux données et généralisation.
+
+\subsubsection{Optimisation de second ordre}
+
+Une innovation majeure de XGBoost est l'utilisation de l'approximation de Taylor de second ordre pour la fonction de perte. Au lieu d'utiliser uniquement le gradient (dérivée première), XGBoost utilise également la hessienne (dérivée seconde).
+
+Pour une observation $i$, on définit :
+
+\begin{equation}
+g_i = \frac{\partial L(y_i, F_{m-1}(x_i))}{\partial F_{m-1}(x_i)}
+\end{equation}
+
+\begin{equation}
+h_i = \frac{\partial^2 L(y_i, F_{m-1}(x_i))}{\partial F_{m-1}(x_i)^2}
+\end{equation}
+
+En développant la fonction objectif au second ordre via Taylor :
+
+\begin{equation}
+\text{Obj}^{(m)} \approx \sum_{i=1}^{n} \left[L(y_i, F_{m-1}(x_i)) + g_i h_m(x_i) + \frac{1}{2}h_i h_m(x_i)^2\right] + \Omega(h_m)
+\end{equation}
+
+En ignorant les termes constants et en regroupant par feuille, on obtient une formule analytique pour le score optimal de chaque feuille $j$ :
+
+\begin{equation}
+w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda}
+\end{equation}
+
+où $I_j$ est l'ensemble des observations dans la feuille $j$.
+
+Cette approche de second ordre offre plusieurs avantages :
+\begin{itemize}
+    \item Convergence plus rapide et plus précise vers l'optimum
+    \item Meilleure gestion de la courbure de la fonction de perte
+    \item Calcul direct des scores optimaux sans recherche itérative
+    \item Stabilité numérique accrue grâce à la hessienne au dénominateur
+\end{itemize}
+
+\subsubsection{Gestion native des valeurs manquantes}
+
+Un problème récurrent en machine learning est la gestion des valeurs manquantes. XGBoost intègre une solution élégante : à chaque nœud de division, l'algorithme apprend automatiquement la meilleure direction par défaut (gauche ou droite) pour les valeurs manquantes.
+
+Le processus fonctionne ainsi :
+\begin{enumerate}
+    \item Pour chaque variable candidate et chaque seuil, on considère deux scénarios :
+    \begin{itemize}
+        \item Les valeurs manquantes vont à gauche
+        \item Les valeurs manquantes vont à droite
+    \end{itemize}
+    \item On calcule le gain de la division dans chaque scénario
+    \item On choisit le scénario qui maximise le gain
+    \item Cette direction est mémorisée et utilisée lors de la prédiction
+\end{enumerate}
+
+Cette approche présente plusieurs avantages pour la détection de fraude :
+\begin{itemize}
+    \item Aucune imputation préalable nécessaire (qui pourrait introduire du biais)
+    \item L'absence d'information peut elle-même être informative (une valeur manquante peut signaler un comportement suspect)
+    \item Adaptation automatique au pattern des données
+    \item Gain de temps en prétraitement
+\end{itemize}
+
+\subsubsection{Optimisations algorithmiques et parallélisation}
+
+XGBoost se distingue également par ses optimisations techniques qui le rendent beaucoup plus rapide que les implémentations standard de gradient boosting :
+
+\textbf{Parallélisation de la construction d'arbres :} Bien que le boosting soit séquentiel entre les arbres, la construction de chaque arbre peut être parallélisée. XGBoost parallélise :
+\begin{itemize}
+    \item Le tri des features lors de la recherche des meilleurs seuils de division
+    \item Le calcul des statistiques (gradient, hessienne) sur plusieurs cœurs CPU
+    \item L'évaluation simultanée de multiples candidats de division
+\end{itemize}
+
+\textbf{Cache-aware access :} Les structures de données sont organisées pour minimiser les défauts de cache CPU. Les gradients et hessiennes sont stockés en mémoire de manière contiguë et accessible par blocs, réduisant drastiquement les temps d'accès mémoire.
+
+\textbf{Histogram-based algorithm :} Au lieu d'énumérer tous les seuils possibles (coûteux pour variables continues), XGBoost regroupe les valeurs en bins discrets (typiquement 256). Cette approximation :
+\begin{itemize}
+    \item Réduit la complexité de $\mathcal{O}(n \times d)$ à $\mathcal{O}(b \times d)$ où $b$ est le nombre de bins
+    \item Diminue l'utilisation mémoire
+    \item Accélère la recherche de divisions optimales
+    \item Introduit une régularisation implicite
+\end{itemize}
+
+\textbf{Out-of-core computing :} Pour des datasets ne tenant pas en mémoire RAM, XGBoost peut :
+\begin{itemize}
+    \item Travailler par blocs stockés sur disque
+    \item Utiliser la compression pour réduire les I/O
+    \item Précharger les blocs suivants pendant le calcul (double buffering)
+\end{itemize}
+
+\textbf{Sparsity-aware learning :} Optimisation spécifique pour les matrices creuses (données avec beaucoup de zéros ou de valeurs manquantes), fréquentes en détection de fraude après one-hot encoding.
+
+\subsubsection{Subsampling stochastique}
+
+Inspiré par Random Forest, XGBoost peut effectuer un échantillonnage aléatoire à plusieurs niveaux :
+
+\begin{itemize}
+    \item \texttt{subsample} : fraction des observations utilisées pour chaque arbre (typiquement 0.8)
+    \item \texttt{colsample\_bytree} : fraction des features utilisées par arbre
+    \item \texttt{colsample\_bylevel} : fraction des features utilisées par niveau d'arbre
+    \item \texttt{colsample\_bynode} : fraction des features utilisées par nœud
+\end{itemize}
+
+Ce subsampling introduit de la randomisation qui :
+\begin{itemize}
+    \item Réduit le surapprentissage
+    \item Décorrèle les arbres successifs
+    \item Accélère l'entraînement
+    \item Améliore la robustesse
+\end{itemize}
+
+\subsubsection{Gestion du déséquilibre des classes}
+
+Pour la détection de fraude avec son déséquilibre extrême, XGBoost offre le paramètre \texttt{scale\_pos\_weight} qui pondère la classe minoritaire. Si on a 99,800 transactions légitimes et 200 fraudes, on peut définir :
+
+\begin{equation}
+\texttt{scale\_pos\_weight} = \frac{n_{\text{légitimes}}}{n_{\text{fraudes}}} = \frac{99800}{200} = 499
+\end{equation}
+
+Cela multiplie le gradient et la hessienne des exemples positifs par ce facteur, forçant le modèle à accorder autant d'importance aux fraudes qu'aux transactions légitimes. Cette approche native évite le besoin de techniques de resampling artificiel comme SMOTE, qui peuvent introduire du bruit.
+
+\subsubsection{Early stopping}
+
+XGBoost intègre un mécanisme d'arrêt anticipé : si la performance sur un ensemble de validation ne s'améliore pas pendant un nombre spécifié d'itérations (rounds), l'entraînement s'arrête automatiquement. Cela prévient le surapprentissage et économise du temps de calcul.
+
+\subsection{Avantages et limites}
+
+\subsubsection{Avantages}
+
+\textbf{Performance exceptionnelle :} XGBoost domine régulièrement les compétitions de machine learning et atteint souvent les meilleures performances sur des données tabulaires. Dans le domaine de la détection de fraude, il surpasse typiquement Random Forest de 5 à 10 points de F1-score.
+
+\textbf{Vitesse d'exécution :} Grâce à ses nombreuses optimisations, XGBoost est significativement plus rapide que les implémentations standard de gradient boosting. Sur des datasets de taille moyenne, il peut entraîner des centaines d'arbres en quelques secondes à minutes, et prédire avec une latence de 2 à 5 millisecondes par transaction, compatible avec les contraintes temps réel bancaires.
+
+\textbf{Flexibilité et contrôle :} La multitude d'hyperparamètres permet un contrôle fin du comportement du modèle. On peut ajuster :
+\begin{itemize}
+    \item La complexité des arbres (profondeur, feuilles minimales, gain minimal)
+    \item L'agressivité de l'apprentissage (learning rate, nombre d'itérations)
+    \item La régularisation (lambda, alpha, gamma)
+    \item Le sampling (observations, features)
+    \item La gestion du déséquilibre (scale\_pos\_weight)
+\end{itemize}
+
+\textbf{Robustesse intrinsèque :} Les mécanismes de régularisation intégrés (L1, L2, contraintes sur arbres, shrinkage) préviennent efficacement le surapprentissage lorsque bien paramétrés.
+
+\textbf{Gestion native de nombreux cas pratiques :}
+\begin{itemize}
+    \item Valeurs manquantes sans imputation
+    \item Classes déséquilibrées via scale\_pos\_weight
+    \item Métriques personnalisées (AUC-PR pour détection de fraude)
+    \item Fonctions de perte sur mesure intégrant coûts métier
+\end{itemize}
+
+\textbf{Évolutivité :} Peut traiter de très grands ensembles de données grâce au out-of-core computing et aux optimisations mémoire, avec des versions distribuées pour clusters (Dask, Spark).
+
+\textbf{Écosystème mature :} Excellente documentation, intégration dans scikit-learn, support de multiples langages (Python, R, Java, C++), outils de visualisation et d'interprétabilité (SHAP, feature importance).
+
+\subsubsection{Limites}
+
+\textbf{Complexité du réglage d'hyperparamètres :} Le grand nombre d'hyperparamètres (20+) rend la recherche du paramétrage optimal potentiellement longue et complexe. Une mauvaise configuration peut conduire à :
+\begin{itemize}
+    \item Surapprentissage (arbres trop profonds, trop d'itérations, learning rate trop élevé)
+    \item Sous-apprentissage (régularisation excessive, arbres trop contraints)
+    \item Temps d'entraînement excessif
+\end{itemize}
+
+Un tuning systématique via recherche en grille ou bayésienne est souvent nécessaire, nécessitant expertise et ressources computationnelles.
+
+\textbf{Risque de surapprentissage :} Malgré la régularisation, XGBoost peut facilement surapprendre si mal paramétré. Le processus séquentiel peut amplifier l'impact des outliers et du bruit si non contrôlé. L'early stopping et la validation croisée sont essentiels.
+
+\textbf{Interprétabilité limitée :} Bien que les importances de features soient disponibles et que des outils comme SHAP permettent d'analyser les contributions, le modèle reste fondamentalement une "boîte noire". Expliquer pourquoi une transaction spécifique a été classée comme fraude nécessite des outils post-hoc et peut être difficile à communiquer aux régulateurs ou clients.
+
+\textbf{Sensibilité au bruit et aux outliers :} Le processus de boosting se concentre itérativement sur les erreurs, ce qui peut inclure des outliers et du bruit. Sans régularisation adéquate ou nettoyage des données, le modèle peut "mémoriser" ces anomalies.
+
+\textbf{Entraînement séquentiel :} Contrairement à Random Forest où les arbres sont totalement indépendants, le boosting est intrinsèquement séquentiel entre les arbres. Bien que la construction de chaque arbre soit parallélisée, on ne peut pas entraîner l'arbre $m+1$ avant d'avoir terminé l'arbre $m$, ce qui limite la parallélisation globale.
+
+\textbf{Temps d'entraînement sur très grands datasets :} Malgré les optimisations, sur des ensembles de plusieurs millions à dizaines de millions de transactions, l'entraînement peut prendre des heures, surtout avec un grand nombre d'itérations et une recherche d'hyperparamètres extensive.
+
+\textbf{Consommation mémoire :} Bien que plus efficace que certaines alternatives, stocker des centaines d'arbres avec leurs structures et poids nécessite de la mémoire (typiquement quelques Mo à quelques dizaines de Mo), ce qui peut poser problème pour le déploiement sur des systèmes très contraints.
+
+\textbf{Courbe d'apprentissage :} La maîtrise de XGBoost nécessite une compréhension des concepts de boosting, de régularisation, et de l'impact de chaque hyperparamètre. Pour un praticien débutant, Random Forest peut être plus accessible.
+
+\subsubsection{Positionnement pour la détection de fraude}
+
+Dans le contexte spécifique de la détection de fraude par carte de crédit, XGBoost se positionne comme le choix optimal lorsque :
+
+\begin{itemize}
+    \item La performance maximale est critique (chaque point de rappel supplémentaire représente des millions d'euros économisés)
+    \item On dispose du temps et de l'expertise pour le tuning d'hyperparamètres
+    \item Le système de production peut supporter une latence de prédiction de quelques millisecondes
+    \item On a accès à des ressources computationnelles suffisantes pour l'entraînement
+    \item Le déséquilibre extrême des classes nécessite une gestion sophistiquée
+\end{itemize}
+
+En revanche, Random Forest peut être préféré pour :
+\begin{itemize}
+    \item Un prototypage rapide et une baseline robuste
+    \item Des contraintes d'interprétabilité strictes
+    \item Une équipe moins expérimentée en machine learning
+    \item Des ressources de tuning limitées
+\end{itemize}
+
+La section suivante présentera une analyse comparative détaillée permettant de quantifier ces différences et de guider le choix selon le contexte spécifique.

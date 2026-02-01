@@ -1,0 +1,529 @@
+\chapter{Machine à vecteurs supports (MVS)}
+
+\section{Introduction}
+
+Les \textit{machines à vecteurs de support} (SVM, pour \textit{Support Vector Machines}) constituent une famille d’algorithmes d’apprentissage supervisé particulièrement efficaces pour les tâches de \textbf{classification} et de \textbf{régression}. Introduites par Vladimir Vapnik et ses collègues dans les années 1990 \citep{boser1992training}, les SVM reposent sur un principe fondamental : la recherche de l’\textbf{hyperplan optimal} séparant au mieux les différentes classes de données, en maximisant la \textbf{marge} entre celles-ci.
+
+Cette approche géométrique, combinée à l’utilisation des \textbf{fonctions noyau} (\textit{kernel functions}) permettant de traiter des problèmes non linéaires, fait des SVM des méthodes robustes et performantes, même dans des espaces de grande dimension. Grâce à leur forte capacité de généralisation et à leur résistance au surapprentissage, les SVM sont aujourd’hui largement utilisées dans des domaines variés tels que la reconnaissance d’images, la bioinformatique, l’analyse de texte ou encore la détection de fraudes.
+
+Leur fondement mathématique solide, reposant sur la théorie de l’\textbf{l’optimisation convexe} \citep{bertsekas2009convex} et la théorie de \textbf{Vapnik--Chervonenkis} \citep{devroye1996vapnik}, leur confère une grande rigueur théorique.
+
+Dans cette section, nous commencerons par présenter les concepts fondamentaux des SVM, en introduisant la notion d’hyperplan séparateur et de \textbf{marge maximale} dans le cas linéairement séparable. Nous aborderons ensuite le traitement des données non linéairement séparables à travers l’introduction des \textbf{marges souples} et de la \textbf{pénalisation des erreurs}. Nous examinerons également le rôle central des fonctions noyau, qui permettent une projection implicite des données dans des espaces de dimension supérieure. Enfin, nous discuterons des aspects pratiques liés à l’implémentation des SVM,
+notamment le choix des hyperparamètres et les stratégies d’optimisation, avant de conclure par quelques applications concrètes illustrant l’efficacité de cette méthode.
+
+
+\section{Objectifs}
+Trouver un hyperplan qui sépare les exemples positifs des exemples négatifs. Cepen-
+dant, alors qu’un réseau de neurones trouve un optimum local, une machine à vecteurs
+supports (MVS) trouve un optimum global. Notons aussi que les machines à vecteurs
+supports ne se cantonnent pas, elles non plus, aux hyperplans, mais peuvent construire
+des séparateurs non linéaires de diverses formes.
+La simple lecture de ce qui précède pourrait laisser penser que les réseaux de neurones
+doivent être remisés aux oubliettes. Cependant, diverses raisons pratiques font que les
+deux techniques (réseau de neurones d’une part, machine à vecteurs supports d’autre
+part) ont chacune des qualités et des défauts et que les deux techniques doivent être
+connues et que les deux ont de bonnes raisons d’être utilisées.
+\section{Principe Général}
+Les \textit{Support Vector Machines} (SVM) peuvent être utilisées pour résoudre des
+problèmes de \textbf{discrimination}, c’est-à-dire décider à quelle classe appartient un
+échantillon, ou des problèmes de \textbf{régression}, c’est-à-dire prédire la valeur
+numérique d’une variable.
+
+La résolution de ces deux problèmes repose sur la construction d’une fonction
+\( h \) qui associe à un vecteur d’entrée \( x \) une sortie \( y \) :
+\[
+y = h(x)
+\]
+
+Dans ce qui suit, on se limite à un problème de discrimination à deux classes
+(\textit{discrimination binaire}), où :
+\[
+y \in \{-1,\,1\}
+\]
+
+Le vecteur d’entrée \( x \) appartient à un espace \( \mathcal{X} \) muni d’un produit
+scalaire. On peut, par exemple, considérer :
+\[
+\mathcal{X} = \mathbb{R}^N
+\]
+
+\section{Machine à vecteurs supports linéaire}
+\subsection{Problème de classification, SVM : C’est quoi, au
+juste ?}
+Avant toute chose, nous allons commencer par établir le \textbf{cadre des notions}
+qui seront abordées par la suite. En particulier, nous cherchons à répondre à la
+question suivante : \emph{\textbf{qu’est-ce qu’un problème de classification~?}}
+
+Considérons l’exemple suivant. On se place dans le \textbf{plan} et l’on dispose de
+\textbf{deux catégories de données} : des \textbf{ronds rouges} et des
+\textbf{carrés bleus}, chacune occupant une \textbf{région distincte du plan}.
+Toutefois, la \textbf{frontière séparant ces deux régions} n’est pas connue
+\emph{a priori}. L’objectif est que, lorsqu’un \textbf{nouveau point} est présenté à
+l’\textbf{algorithme de classification}, et que seule sa \textbf{position dans le plan}
+est connue, celui-ci soit capable de \textbf{prédire la catégorie} à laquelle il
+appartient (rond rouge ou carré bleu).
+
+Nous sommes ainsi face à un \textbf{problème de classification} : pour chaque
+\textbf{nouvelle entrée}, il s’agit de \textbf{déterminer automatiquement la
+catégorie} à laquelle cette entrée appartient.
+
+
+Autrement dit, le \textbf{cœur du problème} consiste à identifier la
+\textbf{frontière séparant les différentes catégories}. Une fois cette frontière
+connue, il suffit de déterminer de quel côté elle se situe le point considéré afin
+d’en \textbf{déduire sa classe}.
+
+Les \textbf{machines à vecteurs de support}
+(\textit{Support Vector Machines}, \textbf{SVM}) constituent une
+\textbf{solution efficace} pour résoudre ce type de problème de
+\textbf{classification}. Elles appartiennent à la famille des
+\textbf{classificateurs linéaires}, qui reposent sur une
+\textbf{séparation linéaire des données}, et disposent de leur propre méthode pour
+\textbf{déterminer la frontière optimale} entre les catégories.
+
+Pour que le \textbf{SVM} puisse identifier cette frontière, il est nécessaire de lui
+fournir des \textbf{données d’entraînement}. En pratique, on fournit au SVM un
+\textbf{ensemble de points étiquetés}, dont on connaît déjà la classe (par exemple,
+des carrés rouges et des ronds bleus, comme illustré à la
+Figure~\ref{fig:classification1}).
+
+À partir de ces données, le SVM va \textbf{estimer l’emplacement le plus plausible de
+la frontière}. Cette phase correspond à la \textbf{période d’entraînement}, étape
+fondamentale de tout \textbf{algorithme d’apprentissage automatique}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Chapters/images/image.png}
+    \caption{L’objet à classer (le triangle noir) est-il un rond rouge ou bien un carré
+bleu ?}
+    \label{fig:classification1}
+\end{figure}
+
+Une fois la phase d’entraînement terminée, le SVM a ainsi trouvé, à partir des don-
+nées d’entraînement, l’emplacement supposé de la frontière. En quelque sorte, il a appris
+l’emplacement de la frontière grâce aux données d’entraînement. Qui plus est, le SVM
+est maintenant capable de prédire à quelle catégorie appartient une entrée qu’il n’avait
+jamais vue auparavant et sans intervention humaine (comme c’est le cas avec le triangle
+noir dans la \textbf{Figure 1.2}) : c’est là tout l’intérêt de l’apprentissage automatique.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Chapters/images/image2.png}
+    \caption{Notre SVM, muni des donn’ees d’entraînement (les carr’es bleus et les
+ronds rouges d’ejà indiqu’es comme tels par l’utilisateur), a tranch’e : le triangle noir est
+en fait un carre bleu}
+    \label{fig:classification2}
+\end{figure}
+
+
+\section{Formalisme des SVM}
+De façon plus générale que dans les exemples précédents, les \textbf{machines à
+vecteurs de support} (SVM) ne se limitent pas à la séparation de points dans le plan.
+Elles permettent de séparer des données dans un \textbf{espace de dimension
+quelconque}.
+
+Par exemple, dans un problème de \textbf{classification de fleurs par espèce}, si
+l’on dispose d’informations telles que la \textbf{taille}, le \textbf{nombre de
+pétales} et le \textbf{diamètre de la tige}, les données peuvent être représentées
+dans un espace de \textbf{dimension 3}. Un autre exemple courant est celui de la
+\textbf{reconnaissance d’images} : une image en niveaux de gris de
+\( 28 \times 28 \) pixels contient \( 784 \) pixels, et peut ainsi être représentée
+comme un point dans un espace de \textbf{dimension 784}. Il est donc fréquent de
+travailler dans des espaces de \textbf{plusieurs milliers de dimensions}.
+
+Fondamentalement, un SVM cherche à déterminer un \textbf{hyperplan} séparant au mieux
+les deux catégories du problème. Un \textbf{hyperplan vectoriel} passe nécessairement
+par l’\textbf{origine}. C’est pour cette raison que l’on introduit un
+\textbf{hyperplan affine}, qui n’est pas contraint de passer par l’origine.
+Ainsi, si l’on se place dans \(\mathbb{R}^n\), pendant son entraînement le SVM
+calculera un \textbf{hyperplan vectoriel} d’équation :
+\[
+w_1 \cdot x_1 + w_2 \cdot x_2 + \dots + w_n \cdot x_n = 0
+\]
+ainsi qu’un scalaire \(b\). C’est ce scalaire \(b\) qui permet de travailler avec un
+\textbf{hyperplan affine}, comme nous allons le voir.
+
+Le vecteur 
+\[
+\mathbf{w} =
+\begin{pmatrix}
+w_1\\
+\vdots\\
+w_n
+\end{pmatrix}
+\]
+est appelé \textbf{vecteur de poids}, et le scalaire \(b\) est appelé \textbf{biais}.
+
+Une fois l’entraînement terminé, pour classer une nouvelle entrée
+\[
+\mathbf{x} =
+\begin{pmatrix}
+a_1\\
+\vdots\\
+a_n
+\end{pmatrix} \in \mathbb{R}^n,
+\]
+le SVM regardera le \textbf{signe} de :
+\[
+h(\mathbf{x}) = w_1 a_1 + \dots + w_n a_n + b = \sum_{i=1}^{n} w_i \cdot a_i = \mathbf{w}^\mathrm{T} \mathbf{x} + b.
+\]
+
+Si \(h(\mathbf{x}) \ge 0\), alors \(\mathbf{x}\) se situe d’un côté de
+l’hyperplan affine et appartient à la \textbf{catégorie 1}.  
+Sinon, \(\mathbf{x}\) se trouve de l’autre côté de l’hyperplan et appartient à
+la \textbf{catégorie 2}.
+
+En résumé, pour un point \(\mathbf{x}\), la fonction \(h\) permet de déterminer
+\textbf{de quel côté de l’hyperplan affine il se trouve} :
+\[
+\mathbf{x} \in
+\begin{cases}
+\text{catégorie 1} & \text{si } h(\mathbf{x}) \ge 0,\\
+\text{catégorie 2} & \text{si } h(\mathbf{x}) < 0.
+\end{cases}
+\]
+
+
+
+
+\section{Principe de la méthode}
+Considérons chaque individu \(\mathbf{x}_i\) comme un point dans un espace à \(P\)
+dimensions. On peut également le voir comme un \textbf{vecteur} \(\vec{x}_i\). Dans
+la suite, nous alternerons entre les deux points de vue selon le contexte.
+
+Si le problème est \textbf{linéairement séparable}, les individus \textbf{positifs} et
+\textbf{négatifs} sont séparés par un \textbf{hyperplan} \(H\).  
+Notons \(H^+\) l’hyperplan parallèle à \(H\) qui contient l’individu positif le plus
+proche de \(H\), et \(H^-\) l’hyperplan contenant l’individu négatif le plus proche
+(voir \textbf{figure~1.3}).
+
+Une \textbf{MVS linéaire} (\textit{Machine à Vecteurs de Support}) recherche
+l’hyperplan qui sépare les données de manière à \textbf{maximiser la distance entre
+\(H^+\) et \(H^-\)}. Cet écart est appelé la \textbf{marge}.
+
+\subsection*{Équation de l’hyperplan}
+Un hyperplan est défini par l’équation :
+\[
+y = \langle \mathbf{w}, \mathbf{x} \rangle + b
+\]
+où \(\langle \mathbf{w}, \mathbf{x} \rangle\) désigne le \textbf{produit scalaire}
+entre les vecteurs \(\mathbf{w}\) et \(\mathbf{x}\).
+
+Pour une donnée \(\mathbf{x}\) appartenant à la classe \(y\), on cherche \(\mathbf{w}\)
+tel que :
+\[
+\begin{cases}
+\langle \mathbf{w}, \mathbf{x} \rangle + b \ge 1 & \text{si } y = +1,\\
+\langle \mathbf{w}, \mathbf{x} \rangle + b \le -1 & \text{si } y = -1.
+\end{cases}
+\]
+
+Cette condition peut se réécrire de façon compacte sous la forme :
+\[
+y \, (\langle \mathbf{w}, \mathbf{x} \rangle + b) - 1 \ge 0.
+\]
+
+\section{Calcul de la marge}
+
+Si l’on prend un point \(\mathbf{x}_k \in \mathbb{R}^n\), on peut montrer que sa
+\textbf{distance à l’hyperplan} défini par le vecteur support \(\mathbf{w}\) et le
+biais \(b\) est donnée par :
+\[
+l_k \frac{\mathbf{w}^\mathrm{T} \mathbf{x}_k + b}{\|\mathbf{w}\|},
+\]
+où \(\|\mathbf{w}\|\) désigne la \textbf{norme euclidienne} de \(\mathbf{w}\), et
+\(l_k\) est le label de la classe (\(+1\) ou \(-1\)).
+
+La \textbf{marge} d’un hyperplan de paramètres \((\mathbf{w}, b)\) par rapport à
+un ensemble de points \((\mathbf{x}_k)\) est donc :
+\[
+\gamma = \min_k \; l_k \frac{\mathbf{w}^\mathrm{T} \mathbf{x}_k + b}{\|\mathbf{w}\|}.
+\]
+
+\textbf{Rappel :} la marge correspond à la \textbf{distance minimale} de
+l’hyperplan à un des points d’entraînement.
+
+\subsubsection*{Démonstration}
+
+On cherche à \textbf{maximiser la largeur de la marge}.  
+
+\begin{enumerate}
+    \item Le vecteur \(\mathbf{w}\) est \textbf{perpendiculaire à l’hyperplan} \(H\).
+    \item Soit \(B \in H^+\) et \(A \in H^-\) le point le plus proche de \(B\)
+    (voir figure~8.1).
+    \item Pour tout point \(O\), on a :
+    \[
+    \overrightarrow{OB} = \overrightarrow{OA} + \overrightarrow{AB}.
+    \]
+    \item Par définition des points \(A\) et \(B\), \(\overrightarrow{AB}\) est
+    \textbf{parallèle à \(\mathbf{w}\)}. Il existe donc \(\lambda \in \mathbb{R}\)
+    tel que :
+    \[
+    \overrightarrow{AB} = \lambda \mathbf{w}, \quad \text{soit} \quad
+    \overrightarrow{OB} = \overrightarrow{OA} + \lambda \mathbf{w}.
+    \]
+    \item On veut que \(A, B, H^-\) et \(H^+\) vérifient :
+    \[
+    B \in H^+ \Rightarrow \langle \mathbf{w}, \overrightarrow{OB} \rangle + b = 1,
+    \quad
+    A \in H^- \Rightarrow \langle \mathbf{w}, \overrightarrow{OA} \rangle + b = -1.
+    \]
+    \item Donc :
+    \[
+    \langle \mathbf{w}, \overrightarrow{OA} + \lambda \mathbf{w} \rangle + b = 1.
+    \]
+    \item En développant :
+    \[
+    \langle \mathbf{w}, \overrightarrow{OA} \rangle + b + \lambda \langle \mathbf{w}, \mathbf{w} \rangle = 1.
+    \]
+    \item Or :
+    \[
+    \langle \mathbf{w}, \overrightarrow{OA} \rangle + b = -1.
+    \]
+    \item Donc :
+    \[
+    \lambda \langle \mathbf{w}, \mathbf{w} \rangle = 2.
+    \]
+    \item Ainsi :
+    \[
+    \lambda = \frac{2}{\|\mathbf{w}\|^2}.
+    \]
+    \item La largeur de la marge est donc :
+    \[
+    |\lambda| \|\mathbf{w}\| = \frac{2}{\|\mathbf{w}\|}.
+    \]
+\end{enumerate}
+
+\textbf{Conclusion :} pour \textbf{maximiser la marge}, il faut \textbf{minimiser
+la norme de \(\mathbf{w}\)}. En effet, une norme plus petite implique une marge
+plus grande, ce qui permet d’améliorer la séparation entre les classes.  
+
+\textbf{Remarque :} les individus positifs sont représentés par un \(+\), et les
+individus négatifs par un \(-\) Les individus \textbf{positifs} sont représentés par un \(+\), et les
+individus \textbf{négatifs} par un \(-\).
+
+On a représenté un \textbf{hyperplan} \(H\) qui sépare les positifs des négatifs.
+(\textbf{Remarque :} sur le schéma, il ne s’agit pas de l’hyperplan qui sépare
+\textbf{au mieux} les deux ensembles.)
+
+Nous avons également représenté \(H^+\) et \(H^-\), tous deux \textbf{parallèles à
+\(H\)}.  
+
+Soit \(B\) un point de \(H^+\) et \(A\) le point le plus proche de \(B\) appartenant
+à \(H^-\) (voir figure 1.3).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Chapters/images/Capture d’écran du 2026-01-21 14-11-33.png}
+    \caption{Schéma illustratif : groupe H+ et H-.}
+    \label{fig:classification3}
+\end{figure}
+\section{Machine à vecteurs supports non linéaire}
+
+\subsection{Introduction aux SVM non linéaires}
+
+Les Machines à Vecteurs de Support (SVM) sont des modèles d'apprentissage supervisé populaires pour la classification et la régression, introduits dans les années 1990 par Vapnik et ses collègues. Leur principe de base est de trouver un hyperplan qui maximise la marge entre les classes, défini par les vecteurs de support, qui sont les points de données les plus proches de cet hyperplan. Cependant, cette approche suppose que les données sont linéairement séparables, ce qui n'est pas toujours le cas dans des scénarios réels. Par exemple, imaginez des données où deux classes forment des cercles concentriques : aucune ligne droite ne peut les séparer efficacement.
+
+C'est ici que les SVM non linéaires entrent en jeu. Ils étendent les capacités des SVM linéaires en traitant des données non linéairement séparables, c'est-à-dire des données où les classes ne peuvent pas être divisées par une frontière linéaire dans l'espace d'origine. Les SVM non linéaires utilisent des fonctions noyau pour transformer les données dans un espace de dimension supérieure où elles deviennent linéairement séparables, permettant ainsi de capturer des relations complexes.
+
+\subsection{Le problème des données non linéaires}
+
+Dans le cadre de la classification avec des algorithmes comme les Machines à Vecteurs de Support (SVM), un défi majeur survient lorsque les données ne sont pas linéairement séparables. On parle de données non linéaires lorsque les classes ne peuvent pas être divisées par une frontière linéaire simple, comme une droite en deux dimensions ou un hyperplan dans des dimensions supérieures. Ce problème est fréquent dans les applications réelles, où les relations entre les variables sont souvent complexes et ne suivent pas des motifs droits ou plats.
+
+Prenons un exemple concret : imaginez deux classes de données disposées en cercles concentriques, l'une formant un petit cercle à l'intérieur et l'autre un anneau autour. Aucune ligne droite ne peut séparer parfaitement ces deux groupes sans inclure des points de l'autre classe. Un autre cas classique est le problème XOR, où quatre points -- $(0,0)$ et $(1,1)$ dans une classe, $(0,1)$ et $(1,0)$ dans une autre -- forment un motif impossible à séparer linéairement. De même, dans le dataset IRIS, bien connu en apprentissage automatique, les espèces Versicolor et Virginica se chevauchent dans l'espace des caractéristiques (comme la longueur et la largeur des pétales), rendant une séparation linéaire imparfaite.
+
+Pour les SVM linéaires, qui reposent sur la recherche d'un hyperplan maximisant la marge entre les classes, ce type de données pose un obstacle insurmontable. Si les classes ne sont pas linéairement séparables, aucun hyperplan ne peut être trouvé sans accepter des erreurs de classification, ce qui compromet la précision du modèle. Par exemple, dans le cas des cercles concentriques, un SVM linéaire ne pourrait tracer qu'une droite coupant les deux cercles, mélangeant ainsi les points des deux classes.
+
+Ce problème est d'autant plus critique que les données réelles -- qu'il s'agisse de pixels d'images, de mots dans un texte ou de mesures biologiques -- présentent souvent des structures non linéaires. Identifier cette limitation est donc essentiel pour comprendre pourquoi les SVM linéaires échouent dans ces cas et pourquoi une approche plus avancée, comme les SVM non linéaires, devient nécessaire.
+
+\begin{figure}[h]
+\centering
+% Remplacer par le chemin de votre image
+\includegraphics[width=0.7\textwidth]{Chapters/images/donnees_non_lineaires.png}
+\caption{Données d'entraînement non linéairement séparables}
+\label{fig:donnees_non_lineaires}
+\end{figure}
+
+\subsection{Principe des SVM non linéaires}
+
+Face au problème des données non linéaires, les SVM non linéaires offrent une solution ingénieuse en modifiant la manière dont les données sont traitées. Leur principe repose sur une idée fondamentale : transformer les données pour les rendre linéairement séparables, tout en conservant l'objectif de base des SVM, qui est de maximiser la marge entre les classes.
+
+\subsubsection{Transformation des données}
+
+Le premier concept clé est la projection des données dans un espace de dimension supérieure. Quand les données ne peuvent pas être séparées par une droite dans leur espace d'origine, l'idée est de les projeter dans un espace plus complexe où une séparation linéaire devient possible. Par exemple, prenons des données en deux dimensions (2D) formant deux cercles concentriques : une classe à l'intérieur, l'autre à l'extérieur. Aucune droite ne peut les séparer proprement en 2D. En revanche, si on transforme ces données en un espace tridimensionnel (3D) -- par exemple, en ajoutant une coordonnée basée sur le carré de la distance au centre --, les points peuvent être ``soulevés'' différemment. Dans cet espace 3D, les cercles deviennent séparables par un plan plat. Cette transformation permet de contourner la limitation des frontières linéaires dans l'espace initial.
+
+\subsubsection{Hyperplan dans l'espace transformé}
+
+Une fois les données projetées dans cet espace de dimension supérieure, le SVM fonctionne comme un modèle linéaire classique : il cherche un hyperplan capable de séparer les classes. Dans notre exemple des cercles, le plan en 3D agit comme une surface qui passe entre les points ``soulevés'' de la classe intérieure et ceux de la classe extérieure. Ce qui est remarquable, c'est que cet hyperplan, bien que linéaire dans l'espace transformé, correspond à une frontière non linéaire (comme un cercle) lorsqu'on le ramène à l'espace 2D d'origine. Ainsi, les SVM non linéaires exploitent cette astuce pour gérer des motifs complexes tout en restant ancrés dans une logique de séparation linéaire.
+
+\subsubsection{Maximisation de la marge}
+
+Enfin, comme pour les SVM linéaires, l'objectif reste de maximiser la marge. Dans l'espace transformé, le SVM identifie les vecteurs de support -- les points les plus proches de l'hyperplan -- et ajuste cet hyperplan pour qu'il soit le plus éloigné possible de ces points, des deux côtés. Cette maximisation garantit que le modèle reste robuste et généralise bien, même dans un espace de dimension supérieure. Ainsi, bien que la transformation change la géométrie des données, le principe fondamental des SVM demeure inchangé : trouver la frontière optimale qui sépare les classes avec la plus grande marge possible.
+
+\subsection{Plongée en dimension supérieure}
+
+Pour contourner le problème, l'idée est donc la suivante : il est impossible de séparer linéairement les données dans notre espace vectoriel ? Qu'importe ! Essayons dans un autre espace. De façon générale, il est courant de ne pas pouvoir séparer les données parce que l'espace est de trop petite dimension. Si l'on arrivait à transposer les données dans un espace de plus grande dimension, on arriverait peut-être à trouver un hyperplan séparateur.
+
+Je sens que j'en ai peut-être perdu quelques-uns en cours de route. Considérons l'exemple suivant pour mieux comprendre. On souhaite construire un SVM qui, à partir de la taille d'un individu, détermine si cet individu est un jeune adolescent (entre 12 et 16 ans, carrés bleus) ou non (ronds rouges).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{Chapters/images/donnees_droite.png}
+\caption{Illustration : données sur une droite}
+\label{fig:donnees_droite}
+\end{figure}
+
+Entre 10 et 12 ans, on mesure entre 120 et 140 cm ; entre 12 et 16 ans, entre 140 et 165 cm ; entre 16 et 18 ans, on mesure plus de 165 cm. Peut-on trouver un hyperplan qui sépare les jeunes de 12--16 ans des autres ? On constate que l'on ne peut pas trouver d'hyperplan séparateur (ici, on est en dimension 1, un hyperplan séparateur est donc un simple point). Ce qui est embêtant : si l'on ne peut pas trouver d'hyperplan séparateur, notre SVM ne sera pas capable de s'entraîner, et encore moins de classer de nouvelles entrées\ldots
+
+On essaie donc de trouver un nouvel espace, généralement de dimension supérieure, dans lequel on peut projeter nos valeurs d'entraînement, et dans lequel on pourra trouver un séparateur linéaire. Dans cet exemple, je vous propose d'utiliser la projection : $\phi : x \mapsto \left(\frac{x-150}{10}, \left(\frac{x-150}{10}\right)^2\right)$. On passe donc de l'espace vectoriel $\mathbb{R}$, de dimension 1, à l'espace vectoriel $\mathbb{R}^2$, de dimension 2. Les données d'entraînement obtenues après cette projection sont les suivantes :
+
+On observe que les données deviennent alors linéairement séparables, ce qui permet à notre SVM de fonctionner correctement ! Plus formellement, l'idée de cette redescription
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{Chapters/images/projection_r2.png}
+\caption{Données d'entraînement après projection dans l'espace $\mathbb{R}^2$}
+\label{fig:projection_r2}
+\end{figure}
+
+du problème est de considérer que l'espace actuel, appelé espace de description, est de dimension trop petite ; alors que si on plongeait les données dans un espace de dimension supérieure, appelé espace de redescription, les données seraient linéairement séparables.
+
+Évidemment, il ne suffit pas de simplement ajouter des dimensions à l'espace de description, car cela ne résoudrait pas le problème. Il faut au contraire redistribuer les points depuis l'espace de description vers l'espace de redescription, à l'aide d'une fonction, nécessairement non linéaire. On définit l'opération de redescription des points $x$ de $E$ vers $E'$ par l'opération :
+\begin{equation}
+\phi : E \to E', \quad x \mapsto \phi(x)
+\end{equation}
+
+Dans ce nouvel espace $E'$, on va tenter d'entraîner le SVM comme nous l'aurions fait dans l'espace initial $E$. Si les données y sont linéairement séparables, c'est gagné ! Par la suite, pour classer un point $x$, il suffira de classer $\phi(x)$, ce qui nous permet d'obtenir un SVM fonctionnel.
+
+\subsection{Le « Kernel Trick » (Astuce du noyau)}
+
+Malheureusement, plus la dimension de l'espace augmente, plus les calculs deviennent complexes et longs. Que se passe-t-il alors si l'on travaille en dimension infinie ? Il est néanmoins possible de simplifier les calculs. En posant le problème d'optimisation quadratique dans l'espace $E'$, on s'aperçoit que les seules apparitions de $\phi$ sont sous la forme $\phi(x_i)^T \cdot \phi(x_j)$. Il en va de même pour l'expression de la fonction de classification $h$. Par conséquent, il n'est pas nécessaire de connaître explicitement $E'$, ni même $\phi$ : il suffit de connaître les valeurs $\phi(x_i)^T \cdot \phi(x_j)$, qui ne dépendent que des $x_i$.
+
+On définit alors une fonction noyau $K : E \times E \to \mathbb{R}$ de la manière suivante :
+\begin{equation}
+K(x, x') = \phi(x)^T \cdot \phi(x')
+\end{equation}
+
+À ce stade, le calcul de l'hyperplan séparateur dans $E'$ ne nécessite ni la connaissance de $E'$, ni de $\phi$, mais uniquement de $K$.
+
+Par exemple, supposons que $E$ soit l'espace de description, de dimension $n$, et que l'espace de redescription $E'$ soit de dimension $n^2$. Le calcul de $K(x_i, x_j)$ se fait en $O(n)$, tandis que le calcul direct de $\phi(x_i)^T \cdot \phi(x_j)$, qui donne le même résultat, se fait en $O(n^2)$, ce qui représente un avantage immédiat en termes de temps de calcul.
+
+C'est à partir de ce constat qu'émerge le \emph{kernel trick}, ou astuce du noyau. Puisque seule la connaissance de $K$ est nécessaire, pourquoi ne pas utiliser une fonction $K$ quelconque, correspondant à une redescription dans un espace $E'$ quelconque, et résoudre le problème de séparation linéaire sans se préoccuper de l'espace de redescription dans lequel on évolue ?
+
+Grâce au théorème de Mercer, on sait qu'une condition suffisante pour qu'une fonction $K$ soit une fonction noyau est qu'elle soit continue, symétrique et semi-définie positive.
+
+\subsubsection*{Propriétés d'un noyau symétrique semi-défini positif}
+
+Une fonction $\phi$ est dite \textbf{symétrique} si et seulement si, pour tout $x, y \in E$, on a $\phi(x, y) = \phi(y, x)$.
+
+Une fonction symétrique $K$ est dite \textbf{semi-définie positive} si et seulement si, pour tout ensemble fini $\{x_1, \ldots, x_n\} \subset E$, et pour tous réels $c_1, \ldots, c_n$,
+\begin{equation}
+\sum_{i=1}^{n} \sum_{j=1}^{n} c_i c_j K(x_i, x_j) \geq 0.
+\end{equation}
+
+Par exemple, le produit scalaire usuel $(a, b) \mapsto \sum_{i=1}^{N} a_i b_i$ est symétrique et semi-défini positif, car
+\begin{equation}
+\forall \{x_1, \ldots, x_n\} \subset E, \forall c_1, \ldots, c_n \in \mathbb{R}, \quad \sum_{i=1}^{n} \sum_{j=1}^{n} c_i c_j (x_i \cdot x_j) = \left\|\sum_{i=1}^{n} c_i x_i\right\|^2 \geq 0.
+\end{equation}
+
+Ainsi, il est possible d'utiliser n'importe quelle fonction noyau afin de réaliser une redescription dans un espace de dimension supérieure. La fonction noyau étant définie sur l'espace de description $E$ (et non sur l'espace de redescription $E'$, de plus grande dimension), les calculs sont beaucoup plus rapides.
+
+Pour résumer, voici les quatre grandes idées à la base du \emph{kernel trick} :
+\begin{itemize}
+\item Les données décrites dans l'espace d'entrée $E$ sont projetées dans un espace de redescription $E'$.
+\item Des régularités linéaires sont cherchées dans cet espace $E'$.
+\item Les algorithmes de recherche n'ont pas besoin de connaître les coordonnées des projections des données dans $E'$, mais seulement leurs produits scalaires.
+\item Ces produits scalaires peuvent être calculés efficacement grâce à l'utilisation de fonctions noyau.
+\end{itemize}
+
+\subsection{Les principaux noyaux utilisés}
+
+Le ``kernel trick'' repose sur des fonctions noyau spécifiques qui définissent comment les données sont implicitement transformées dans un espace de dimension supérieure. Chaque noyau a ses propres caractéristiques, paramètres et cas d'utilisation. Voici les trois principaux noyaux utilisés dans les SVM non linéaires, suivis d'une comparaison rapide.
+
+\subsubsection{Noyau Polynomial}
+
+\textbf{Formule :}
+\begin{equation}
+K(x, x') = (\alpha \cdot x^\top x' + \lambda)^d
+\label{eq:noyau_polynomial}
+\end{equation}
+
+\textbf{Description :} Le noyau polynomial évalue la similarité entre deux vecteurs en élevant leur produit scalaire, ajusté par des constantes, à une puissance donnée. Ce noyau est particulièrement utile pour modéliser des relations non linéaires en transformant l'espace d'entrée en un espace de dimensions supérieures, permettant ainsi de capturer des interactions complexes entre les variables.
+
+\textbf{Paramètres :}
+\begin{itemize}
+\item $\alpha$ : facteur d'échelle du produit scalaire.
+\item $\lambda$ : constante ajoutée pour ajuster la souplesse du modèle.
+\item $d$ : degré du polynôme, déterminant la complexité de la frontière de décision.
+\end{itemize}
+
+\textbf{Exemple d'application :} Reconnaissance d'écriture manuscrite
+
+Dans la reconnaissance de chiffres manuscrits, comme ceux de la base de données MNIST, les machines à vecteurs de support (SVM) avec un noyau polynomial peuvent classifier efficacement les images en tenant compte des interactions complexes entre les pixels. Le noyau polynomial permet de modéliser des frontières de décision non linéaires, améliorant ainsi la précision de la classification.
+
+\subsubsection{Noyau Gaussien (RBF - Radial Basis Function)}
+
+\textbf{Formule :}
+\begin{equation}
+K(x, x') = \exp\left(-\frac{\norm{x - x'}^2}{2\sigma^2}\right)
+\label{eq:noyau_gaussien}
+\end{equation}
+
+\textbf{Description :} Le noyau gaussien mesure la similarité entre deux points en fonction de la distance euclidienne qui les sépare. Il est particulièrement efficace pour capturer des relations complexes dans les données, même lorsque la séparation linéaire n'est pas possible dans l'espace d'origine.
+
+\textbf{Paramètre :}
+\begin{itemize}
+\item $\sigma$ : paramètre de lissage déterminant la portée de l'influence d'un point de données sur un autre.
+\end{itemize}
+
+\textbf{Exemple d'application :} Détection d'e-mails indésirables (spam)
+
+Les filtres anti-spam utilisent des SVM avec un noyau gaussien pour distinguer les e-mails légitimes des spams. Le noyau RBF capture les relations complexes entre les caractéristiques des e-mails, telles que la fréquence des mots, les structures de phrases et les métadonnées, permettant une classification précise même lorsque les spams présentent des variations subtiles.
+
+\subsubsection{Noyau Laplacien}
+
+\textbf{Formule :}
+\begin{equation}
+K(x, x') = \exp\left(-\frac{\norm{x - x'}}{\sigma}\right)
+\label{eq:noyau_laplacien}
+\end{equation}
+
+\textbf{Description :} Semblable au noyau gaussien, le noyau laplacien utilise la distance euclidienne pour évaluer la similarité, mais avec une décroissance exponentielle différente. Il est souvent préféré lorsque les données présentent des variations plus abruptes ou des discontinuités.
+
+\textbf{Paramètre :}
+\begin{itemize}
+\item $\sigma$ : paramètre contrôlant la largeur de la fonction noyau, influençant la sensibilité aux variations locales des données.
+\end{itemize}
+
+\textbf{Exemple d'application :} Analyse de données biologiques
+
+Dans la bioinformatique, le noyau laplacien est utilisé pour comparer des séquences génétiques ou protéiques. En mesurant la similarité entre les séquences, il aide à identifier des gènes homologues, à prédire des structures protéiques ou à classifier des espèces biologiques, même lorsque les séquences présentent des variations significatives.
+
+\subsubsection{Noyau Rationnel Quadratique}
+
+\textbf{Formule :}
+\begin{equation}
+K(x, x') = 1 - \frac{\norm{x - x'}^2}{\norm{x - x'}^2 + \sigma}
+\label{eq:noyau_rationnel}
+\end{equation}
+
+\textbf{Description :} Le noyau rationnel quadratique est une variante du noyau gaussien qui offre une mesure de similarité basée sur une fraction rationnelle de la distance entre les points. Il est utile pour modéliser des relations où la similarité diminue de manière non exponentielle avec la distance.
+
+\textbf{Paramètre :}
+\begin{itemize}
+\item $\sigma$ : paramètre ajustant la courbure de la fonction noyau, affectant la manière dont la similarité décroît avec la distance.
+\end{itemize}
+
+\textbf{Exemple d'application :} Systèmes de recommandation
+
+Les plateformes de streaming musical ou vidéo utilisent le noyau rationnel quadratique pour modéliser la similarité entre les préférences des utilisateurs. En évaluant la distance entre les profils d'écoute ou de visionnage, ce noyau permet de recommander des contenus pertinents en tenant compte des variations subtiles dans les habitudes des utilisateurs.
+
+\vspace{1em}
+
+Chacun de ces noyaux possède ses avantages et ses inconvénients, comme décrits dans le document. C'est donc à l'utilisateur de choisir le noyau, et les paramètres de ce noyau, qui correspond le mieux à son problème. Et comment choisir son noyau, me demanderez-vous ? Eh bien\ldots{} Je n'ai pas de méthode à vous donner, ça dépend énormément de votre jeu de données.
+\section{Conclusion}
+
+Les Support Vector Machines (SVM) sont des algorithmes de classification et de régression puissants, particulièrement efficaces pour les problèmes à haute dimensionnalité et pour les jeux de données où les classes sont bien séparables. Grâce à l'utilisation des \emph{marges maximales} et des \emph{noyaux} (\emph{kernels}), les SVM peuvent modéliser des frontières de décision complexes tout en minimisant le risque de surapprentissage. Bien qu'ils puissent être sensibles aux choix des hyperparamètres et coûteux en calcul pour de très grands ensembles de données, leur précision et leur robustesse font des SVM un outil essentiel dans la boîte à outils de l'apprentissage automatique.
+
+
+

@@ -1,0 +1,556 @@
+\chapter{Random Forests (RF) }
+\section{Introduction}
+
+Les praticiens du machine learning sont souvent confrontés à un défi fondamental : les arbres de décision simples, bien qu’intuitifs et interprétables, ont tendance à surapprendre (\emph{overfitting}) les données d’entraînement. Un arbre de décision qui mémorise parfaitement chaque exemple d’apprentissage aura généralement de mauvaises performances sur de nouvelles données non vues. C’est dans ce contexte que les forêts aléatoires (\emph{Random Forests}) entrent en jeu.
+
+Les forêts aléatoires, introduites par Leo Breiman en 2001, constituent une méthode puissante d’apprentissage en ensemble qui combine plusieurs arbres de décision afin de produire un prédicteur plus robuste et plus précis. L’idée fondamentale est remarquablement simple : si un seul expert peut commettre des erreurs, pourquoi ne pas consulter un comité d’experts et retenir l’opinion majoritaire ?
+
+Ce principe, parfois appelé la \emph{sagesse des foules} (\emph{wisdom of crowds}), suggère que la prédiction moyenne issue de plusieurs modèles indépendants est généralement plus précise et plus stable que celle d’un modèle unique. Les forêts aléatoires mettent ce principe en pratique en entraînant de nombreux arbres de décision, chacun sur des versions légèrement différentes des données, puis en agrégeant leurs prédictions.
+
+Dans le contexte de ce rapport, les forêts aléatoires occupent une position intermédiaire importante. Contrairement aux machines à vecteurs de support (\emph{Support Vector Machines, SVM}), qui recherchent des frontières de décision optimales à l’aide de méthodes à noyaux sophistiquées, les forêts aléatoires reposent sur des structures arborescentes interprétables. À l’inverse de XGBoost, qui construit les arbres de manière séquentielle afin de corriger les erreurs précédentes, les forêts aléatoires construisent tous les arbres de façon indépendante et en parallèle.
+
+Cette section vous guidera à travers les fondements théoriques des forêts aléatoires, leur implémentation algorithmique, les paramètres clés et les stratégies d’ajustement, leurs avantages et limitations pratiques, et enfin leur comparaison avec d’autres méthodes de la boîte à outils du machine learning. À la fin de cette section, vous comprendrez non seulement comment fonctionnent les forêts aléatoires, mais aussi quand et pourquoi les utiliser.
+\section{Fondements théoriques : l’apprentissage en ensemble}
+
+Pour comprendre pourquoi les forêts aléatoires sont si performantes, il est nécessaire de s’intéresser au principe de l’apprentissage en ensemble (\emph{ensemble learning}). L’idée centrale est que la combinaison de plusieurs \emph{apprenants faibles} (\emph{weak learners}) peut produire un \emph{apprenant fort} (\emph{strong learner}) qui surpasse chacun des modèles pris individuellement.
+
+Un concept fondamental du machine learning pour analyser ce phénomène est le compromis biais-variance (\emph{bias--variance trade-off}). L’erreur de prédiction d’un modèle peut être décomposée en trois composantes :
+\[
+\text{Erreur totale} = \text{Biais}^2 + \text{Variance} + \text{Erreur irréductible}
+\]
+
+Le biais représente les erreurs systématiques, c’est-à-dire l’écart entre la prédiction moyenne du modèle et la valeur réelle. La variance mesure la sensibilité du modèle aux variations des données d’apprentissage, autrement dit à quel point les prédictions changent lorsque le modèle est entraîné sur des jeux de données différents. L’erreur irréductible correspond au bruit intrinsèque présent dans les données, qu’aucun modèle ne peut éliminer.
+
+Les arbres de décision individuels, lorsqu’ils sont développés jusqu’à une profondeur maximale, présentent généralement un faible biais (car ils sont capables de modéliser des relations complexes), mais une variance élevée (car de légères variations dans les données d’entraînement peuvent produire des structures d’arbres très différentes). Ainsi, entraîner un arbre de décision profond sur des données légèrement modifiées peut conduire à un modèle totalement différent.
+
+Les méthodes d’ensemble répondent à ce problème en exploitant une propriété mathématique clé : lorsque l’on moyenne plusieurs variables aléatoires indépendantes, la variance de la moyenne est inférieure à la variance de chacune des variables individuelles. Plus précisément, si l’on dispose de $n$ prédictions indépendantes ayant chacune une variance $\sigma^2$, alors la variance de leur moyenne est donnée par :
+\[
+\frac{\sigma^2}{n}
+\]
+
+La technique fondamentale exploitant ce principe est le \emph{Bootstrap Aggregating}, plus communément appelé \emph{bagging}. Son fonctionnement est le suivant : au lieu d’entraîner un seul modèle sur l’ensemble du jeu de données, on génère plusieurs échantillons bootstrap (échantillonnage aléatoire avec remise) à partir des données originales. Chaque échantillon bootstrap a la même taille que le jeu de données initial, mais contient certaines observations répétées et en omet d’autres. Un modèle distinct est entraîné sur chaque échantillon, puis leurs prédictions sont agrégées.
+
+D’un point de vue mathématique, si l’on considère $K$ modèles produisant les prédictions $f_1(x), f_2(x), \ldots, f_K(x)$, la prédiction de l’ensemble est définie comme suit :
+\[
+F(x) = \frac{1}{K} \sum_{k=1}^{K} f_k(x) \quad \text{(régression)}
+\]
+\[
+F(x) = \text{mode}\{f_1(x), f_2(x), \ldots, f_K(x)\} \quad \text{(classification)}
+\]
+
+Cette opération d’agrégation permet de réduire significativement la variance sans augmenter le biais, conduisant ainsi à un modèle qui généralise mieux sur de nouvelles données. Les forêts aléatoires vont encore plus loin que le bagging classique en introduisant une source supplémentaire d’aléa, qui sera abordée dans la suite.
+
+\medskip
+\noindent
+\textbf{Formule clé :} la moyenne d’un ensemble de prédictions réduit la variance :
+\[
+\mathrm{Var}(\bar{X}) = \frac{\sigma^2}{n}
+\]
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\linewidth]{logos/fonctionnement.png}
+    \caption{Fonctionnement du Random Forest}
+    \label{fig:Label de la figure}
+\end{figure}
+\section{Rappel sur les arbres de décision}
+
+Avant d’approfondir l’étude des forêts aléatoires, il est utile de rappeler le fonctionnement des arbres de décision individuels, puisqu’ils constituent les briques élémentaires de toute forêt.
+
+Un arbre de décision est un modèle hiérarchique qui effectue des prédictions en posant une succession de questions binaires (oui/non) sur les variables d’entrée. Il est composé de nœuds internes (points de décision), de branches (réponses possibles) et de nœuds feuilles (prédictions finales). Par exemple, prédire si une personne achètera un produit peut impliquer des questions telles que « \emph{Âge > 30 ?} », suivies de « \emph{Revenu > 50\,000 \$ ?} », et ainsi de suite.
+
+La construction d’un arbre de décision repose sur l’algorithme CART (\emph{Classification and Regression Trees}). En partant de l’ensemble des données d’apprentissage au niveau du nœud racine, l’algorithme divise récursivement les données en fonction des valeurs des caractéristiques qui séparent le mieux la variable cible. La question clé est alors : comment mesurer ce « meilleur » découpage ?
+
+\subsection{Critères de séparation}
+
+Pour les problèmes de classification, on utilise des mesures telles que l’impureté de Gini ou l’entropie.
+
+L’impureté de Gini mesure la probabilité qu’un élément choisi aléatoirement soit mal classé :
+\[
+\text{Gini} = 1 - \sum_{i=1}^{C} p_i^2
+\]
+où $p_i$ représente la proportion de la classe $i$ dans le nœud. Un nœud pur, dans lequel toutes les observations appartiennent à une seule classe, a une impureté de Gini égale à 0. L’impureté est maximale lorsque les classes sont réparties de manière uniforme.
+
+L’entropie mesure le contenu informationnel d’un nœud :
+\[
+\text{Entropie} = - \sum_{i=1}^{C} p_i \log_2 p_i
+\]
+
+Pour les problèmes de régression, le critère utilisé est l’erreur quadratique moyenne (\emph{Mean Squared Error, MSE}) :
+\[
+\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \bar{y})^2
+\]
+où $\bar{y}$ représente la moyenne des valeurs cibles dans le nœud.
+
+\subsection{Construction récursive et surapprentissage}
+
+L’algorithme évalue toutes les divisions possibles pour l’ensemble des caractéristiques et sélectionne celle qui entraîne la plus grande diminution de l’impureté ou de l’erreur. Ce processus se poursuit de manière récursive jusqu’à ce qu’un critère d’arrêt soit atteint, tel qu’une profondeur maximale, un nombre minimal d’exemples par nœud, ou l’absence de gain supplémentaire.
+
+C’est précisément à ce niveau que se situe le problème : un arbre de décision construit sans contraintes continuera à se diviser jusqu’à ce que chaque feuille contienne un seul exemple d’apprentissage, mémorisant parfaitement les données d’entraînement. Un tel arbre présente une erreur nulle sur les données d’apprentissage, mais des performances très faibles sur les données de test, ce qui correspond à un cas classique de surapprentissage (\emph{overfitting}).
+
+Les arbres de décision individuels sont donc considérés comme des modèles à \emph{forte variance et faible biais}. Ils sont suffisamment flexibles pour capturer des relations complexes (faible biais), mais cette flexibilité excessive les rend sensibles au bruit et fortement dépendants des échantillons d’apprentissage (forte variance). Cette caractéristique en fait des candidats idéaux pour les méthodes d’apprentissage en ensemble visant à réduire la variance, ce qui nous conduit naturellement aux forêts aléatoires.
+
+\medskip
+\noindent
+\textbf{Mesures clés :}
+\[
+\text{Impureté de Gini} = 1 - \sum p_i^2, \quad
+\text{Entropie} = - \sum p_i \log_2 p_i, \quad
+\text{MSE} = \frac{1}{n} \sum (y_i - \bar{y})^2
+\]
+\section{Algorithme des forêts aléatoires}
+
+Nous arrivons maintenant au cœur du fonctionnement des forêts aléatoires. L’algorithme introduit deux sources clés de hasard qui le rendent plus puissant qu’un simple \emph{bagging} d’arbres de décision.
+
+\subsection{Étape 1 : Échantillonnage bootstrap}
+
+Pour chacun des $K$ arbres que l’on souhaite construire (généralement entre 100 et 1000 arbres), on crée un échantillon bootstrap à partir des données d’apprentissage. Cela consiste à sélectionner aléatoirement $n$ observations avec remise à partir du jeu de données original de taille $n$.
+
+Étant donné que l’échantillonnage se fait avec remise, certaines observations peuvent apparaître plusieurs fois, tandis que d’autres ne sont pas sélectionnées du tout. En moyenne, chaque échantillon bootstrap contient environ $63{,}2\,\%$ d’observations uniques provenant du jeu de données original.
+
+\subsection{Étape 2 : Sélection aléatoire des caractéristiques}
+
+C’est à cette étape que les forêts aléatoires se distinguent du \emph{bagging} standard. Lors de la construction de chaque arbre, à chaque point de division, au lieu de considérer l’ensemble des $p$ caractéristiques disponibles, on sélectionne aléatoirement un sous-ensemble de $m$ caractéristiques, avec $m < p$. La meilleure division est alors choisie uniquement parmi ces $m$ caractéristiques.
+
+Ce processus est répété à chaque nœud de l’arbre, avec un nouveau sous-ensemble aléatoire de caractéristiques sélectionné à chaque fois.
+
+Cette source de hasard est cruciale : elle permet de décorréler les arbres entre eux, évitant qu’ils ne commettent tous les mêmes erreurs. Si une caractéristique est particulièrement dominante, l’absence de sélection aléatoire conduirait la majorité des arbres à l’utiliser dès la première division, rendant les arbres fortement corrélés. En imposant l’exploration de caractéristiques différentes, on introduit de la diversité au sein de l’ensemble.
+
+\subsection{Étape 3 : Croissance des arbres}
+
+Chaque arbre est développé jusqu’à sa profondeur maximale, sans élagage (\emph{pruning}). Contrairement à la construction d’un arbre de décision unique — où l’on applique souvent des critères d’arrêt anticipés ou des techniques d’élagage pour éviter le surapprentissage — les forêts aléatoires autorisent chaque arbre à surapprendre complètement son échantillon bootstrap.
+
+Ce choix peut sembler contre-intuitif, mais il repose sur un principe fondamental : c’est l’agrégation des prédictions de nombreux arbres fortement variables qui permet de lisser le surapprentissage individuel et d’améliorer la généralisation globale.
+
+\subsection{Étape 4 : Agrégation des prédictions}
+
+Une fois les $K$ arbres entraînés, le processus de prédiction est simple :
+
+\begin{itemize}
+    \item \textbf{Classification :} chaque arbre vote pour une classe, et la classe finale est celle qui obtient le plus grand nombre de votes (vote majoritaire).
+    \item \textbf{Régression :} la prédiction finale correspond à la moyenne des prédictions de tous les arbres.
+\end{itemize}
+
+D’un point de vue mathématique :
+\[
+\hat{y} = \text{mode}\{T_1(x), T_2(x), \ldots, T_K(x)\} \quad \text{(classification)}
+\]
+\[
+\hat{y} = \frac{1}{K} \sum_{k=1}^{K} T_k(x) \quad \text{(régression)}
+\]
+où $T_k(x)$ représente la prédiction du $k$-ième arbre pour une observation $x$.
+\subsection{Algorithm Pseudocode}
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\linewidth]{logos/code.png}
+    \caption{Random Forest}
+    \label{fig:Label de la figure}
+\end{figure}
+Cette combinaison élégante de l’échantillonnage bootstrap et de la sélection aléatoire des caractéristiques permet de construire un ensemble puissant qui surpasse généralement à la fois les arbres de décision individuels et les arbres issus d’un simple \emph{bagging}.
+
+\medskip
+\noindent
+\textbf{Idée clé :} les deux sources de hasard l’échantillonnage bootstrap et la sélection aléatoire des caractéristiques génèrent des arbres diversifiés dont les erreurs individuelles tendent à s’annuler lors de l’agrégation, conduisant à de meilleures performances de généralisation.
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\linewidth]{logos/bagging vs boosting.png}
+    \caption{Bagging vs Boosting }
+    \label{fig:Label de la figure}
+\end{figure}
+\section{Hyperparamètres clés et leurs effets}
+
+La compréhension des hyperparamètres des forêts aléatoires est essentielle pour obtenir des performances optimales. Bien que les forêts aléatoires donnent généralement de bons résultats avec les paramètres par défaut, un ajustement fin de ces hyperparamètres peut améliorer significativement les performances.
+
+\subsection{Nombre d’arbres (\texttt{n\_estimators} ou \texttt{ntree})}
+
+Ce paramètre contrôle le nombre d’arbres à construire dans la forêt. En général, un plus grand nombre d’arbres conduit à de meilleures performances et à une plus grande stabilité, mais avec des gains décroissants. L’erreur diminue généralement jusqu’à atteindre un plateau lorsque l’on augmente le nombre d’arbres.
+
+\begin{itemize}
+    \item \textbf{Valeurs typiques :} 100 à 1000 arbres.
+    \item \textbf{Effet :} un plus grand nombre d’arbres réduit la variance et stabilise les prédictions, mais augmente le temps de calcul.
+    \item \textbf{Règle pratique :} commencer avec 100 à 500 arbres ; augmenter si les ressources de calcul le permettent et si les performances n’ont pas atteint un plateau.
+    \item \textbf{Remarque importante :} contrairement aux méthodes de boosting, l’ajout d’arbres ne provoque généralement pas de surapprentissage ; les arbres supplémentaires deviennent simplement redondants.
+\end{itemize}
+
+\subsection{Nombre de caractéristiques par division (\texttt{max\_features} ou \texttt{mtry})}
+
+Il s’agit sans doute du paramètre d’ajustement le plus important, car il contrôle le nombre de caractéristiques sélectionnées aléatoirement à chaque division.
+
+\begin{itemize}
+    \item \textbf{Classification :} la valeur par défaut est $\sqrt{p}$, où $p$ représente le nombre total de caractéristiques.
+    \item \textbf{Régression :} la valeur par défaut est $p/3$.
+    \item \textbf{Effet :} des valeurs plus petites produisent des arbres plus diversifiés (corrélation plus faible) mais individuellement plus faibles ; des valeurs plus grandes produisent des arbres plus performants individuellement mais plus fortement corrélés.
+    \item \textbf{Stratégie d’ajustement :} tester des valeurs autour des paramètres par défaut ; souvent, la valeur optimale est proche de $\sqrt{p}$ en classification, mais explorer $p/3$, $p/2$ ou $2\sqrt{p}$ peut être bénéfique.
+\end{itemize}
+
+\subsection{Contrôle de la profondeur des arbres}
+
+Plusieurs paramètres contrôlent la profondeur de croissance des arbres :
+
+\begin{itemize}
+    \item \texttt{max\_depth} : profondeur maximale de chaque arbre (par défaut : \texttt{None}, croissance jusqu’à pureté).
+    \item \texttt{min\_samples\_split} : nombre minimal d’exemples requis pour diviser un nœud (souvent 2 par défaut).
+    \item \texttt{min\_samples\_leaf} : nombre minimal d’exemples requis dans une feuille (souvent 1 par défaut).
+\end{itemize}
+
+Ces paramètres établissent un compromis entre la complexité du modèle et sa capacité de généralisation :
+
+\begin{itemize}
+    \item Des arbres très profonds peuvent capturer des relations complexes mais risquent le surapprentissage.
+    \item Des arbres peu profonds sont plus rapides mais peuvent sous-apprendre.
+    \item En pratique, les forêts aléatoires sont robustes vis-à-vis de ces paramètres, et les valeurs par défaut donnent souvent de bons résultats.
+\end{itemize}
+
+\subsection{Taille des échantillons bootstrap (\texttt{max\_samples})}
+
+Ce paramètre contrôle la taille des échantillons bootstrap en tant que fraction du jeu de données original.
+
+\begin{itemize}
+    \item \textbf{Valeur par défaut :} 1.0 (taille identique au jeu de données initial).
+    \item \textbf{Effet :} des valeurs plus faibles augmentent la diversité des arbres mais peuvent réduire la qualité individuelle de chaque arbre.
+    \item \textbf{Quand réduire :} pour les jeux de données très volumineux, échantillonner une fraction plus faible permet d’accélérer l’entraînement avec une perte de précision souvent négligeable.
+\end{itemize}
+
+\subsection{Stratégie pratique d’ajustement}
+
+\begin{enumerate}
+    \item Commencer avec les paramètres par défaut (ils offrent généralement une excellente base).
+    \item Ajuster d’abord \texttt{n\_estimators} afin d’identifier le point où les performances atteignent un plateau.
+    \item Ajuster ensuite \texttt{max\_features} à l’aide de la validation croisée, car c’est le paramètre le plus influent.
+    \item Modifier les paramètres de profondeur uniquement si un surapprentissage ou un sous-apprentissage est observé.
+    \item Utiliser l’erreur \emph{out-of-bag} (OOB) pour une évaluation rapide sans recourir à la validation croisée.
+\end{enumerate}
+
+La principale force des forêts aléatoires réside dans leur faible sensibilité aux hyperparamètres. Les valeurs par défaut constituent une base solide, et le modèle échoue rarement de manière catastrophique même en présence de choix sous-optimaux.
+
+\medskip
+\noindent
+\textbf{Paramètre clé :} \texttt{max\_features} est l’hyperparamètre le plus important, car il contrôle directement le compromis entre la diversité des arbres et leur puissance individuelle.
+\section{Estimation de l’erreur \emph{Out-of-Bag} (OOB)}
+
+L’une des fonctionnalités les plus élégantes des forêts aléatoires est l’estimation de l’erreur \emph{Out-of-Bag} (OOB), qui fournit un mécanisme de validation intégré sans nécessiter un jeu de données de test séparé.
+
+\subsection{Mathématiques derrière l’OOB}
+
+Lorsqu’on crée un échantillon bootstrap de $n$ observations, on échantillonne avec remise. Cela signifie que certaines observations peuvent apparaître plusieurs fois tandis que d’autres ne sont pas sélectionnées.  
+
+La probabilité qu’une observation donnée ne soit pas sélectionnée lors d’un tirage est :
+\[
+1 - \frac{1}{n}
+\]
+
+Étant donné que l’on effectue $n$ tirages indépendants, la probabilité qu’une observation ne soit jamais sélectionnée est :
+\[
+P(\text{non sélectionnée}) = \left( 1 - \frac{1}{n} \right)^n
+\]
+
+Lorsque $n$ tend vers l’infini, cette probabilité converge vers $1/e \approx 0,368$. Autrement dit, environ $36{,}8\%$ des observations sont laissées de côté pour chaque échantillon bootstrap. Ces observations non incluses sont appelées \emph{échantillons out-of-bag} pour cet arbre particulier.
+
+\subsection{Fonctionnement de l’erreur OOB}
+
+Voici l’astuce : pour chaque observation du jeu de données d’apprentissage, on peut identifier les arbres qui ne l’ont pas utilisée lors de leur entraînement (c’est-à-dire ceux pour lesquels l’observation était OOB). On effectue alors les prédictions pour cette observation uniquement avec ces arbres.
+
+Le processus est le suivant :
+\begin{enumerate}
+    \item Pour chaque observation $i$ du jeu d’entraînement, identifier tous les arbres pour lesquels $i$ était OOB.
+    \item Agréger les prédictions de ces arbres (vote majoritaire pour la classification, moyenne pour la régression).
+    \item Comparer la prédiction OOB à la valeur réelle.
+    \item Calculer l’erreur OOB globale sur l’ensemble des observations.
+\end{enumerate}
+
+Mathématiquement, pour une observation $i$, soit $C_i$ l’ensemble des arbres où $i$ est OOB :
+\[
+\hat{y}^{\text{OOB}}_i = \frac{1}{|C_i|} \sum_{k \in C_i} T_k(x_i)
+\]
+
+L’erreur OOB est alors définie par :
+\[
+\text{OOB\_Error} = \frac{1}{n} \sum_{i=1}^{n} L(y_i, \hat{y}^{\text{OOB}}_i)
+\]
+où $L$ est la fonction de perte (perte 0-1 pour la classification, erreur quadratique pour la régression).
+
+\subsection{Valeur et avantages de l’OOB}
+
+L’erreur OOB fournit une estimation non biaisée de l’erreur de généralisation. Elle agit comme une validation croisée intégrée dans le processus d’entraînement :
+
+\begin{itemize}
+    \item \textbf{Pas de jeu de validation séparé :} l’évaluation de performance se fait uniquement avec les données d’entraînement.
+    \item \textbf{Efficace :} aucun entraînement supplémentaire n’est nécessaire.
+    \item \textbf{Non biaisée :} chaque prédiction utilise uniquement les arbres n’ayant pas vu cette observation.
+    \item \textbf{Surveillance de l’entraînement :} l’OOB permet de suivre la stabilisation de l’erreur et de déterminer le nombre d’arbres suffisant.
+\end{itemize}
+
+\subsection{Applications pratiques}
+
+\begin{enumerate}
+    \item Sélection de modèle : comparer les erreurs OOB pour différents réglages d’hyperparamètres.
+    \item Critère d’arrêt : arrêter l’ajout d’arbres lorsque l’erreur OOB atteint un plateau.
+    \item Sélection de variables : retirer certaines caractéristiques et vérifier si l’erreur OOB s’améliore.
+    \item Évaluation rapide : estimer les performances sans jeu de validation (la validation finale doit toutefois utiliser un jeu de test indépendant).
+\end{enumerate}
+
+\subsection{Limites}
+
+Bien que puissante, l’erreur OOB présente certaines limites :
+\begin{itemize}
+    \item Légèrement optimiste par rapport à une validation avec un jeu de test indépendant (les modèles voient l’ensemble des données collectivement).
+    \item Nécessite un nombre suffisant d’arbres pour obtenir des estimations stables (chaque observation doit être OOB pour plusieurs arbres).
+    \item Moins fiable avec des jeux de données très petits.
+\end{itemize}
+
+En pratique, l’erreur OOB se rapproche généralement de l’erreur obtenue par validation croisée, tout en étant beaucoup plus efficace à calculer, ce qui en fait un outil précieux pour travailler avec les forêts aléatoires.
+
+\medskip
+\noindent
+\textbf{Formule clé :} probabilité qu’une observation ne soit pas sélectionnée dans un échantillon bootstrap :
+\[
+P(\text{non sélectionnée}) = \left( 1 - \frac{1}{n} \right)^n \to \frac{1}{e} \approx 0,368
+\]
+\section{Mesures de l’importance des variables}
+
+Comprendre quelles variables influencent les prédictions est essentiel pour l’interprétation du modèle, la sélection des caractéristiques et les insights métiers. Les forêts aléatoires offrent deux approches principales pour mesurer l’importance des variables.
+
+\subsection{Diminution moyenne de l’impureté (MDI)}
+
+Également appelée \emph{Gini importance}, cette méthode est la valeur par défaut dans la plupart des implémentations. L’idée est simple : les variables importantes sont utilisées pour des divisions qui réduisent significativement l’impureté.
+
+\begin{enumerate}
+    \item Pour chaque nœud de chaque arbre où cette variable est utilisée pour la division, mesurer la diminution d’impureté pondérée.
+    \item Somme des diminutions sur tous les arbres.
+    \item Normalisation par le nombre d’arbres.
+\end{enumerate}
+
+Mathématiquement, pour une variable $j$ :
+\[
+\text{Importance}(j) = \sum_k \sum_{t \in T_k} I(v_t = j) \times \left(\frac{n_t}{N}\right) \times \Delta I_t
+\]
+où :
+\begin{itemize}
+    \item $T_k$ représente tous les nœuds de l’arbre $k$,
+    \item $I(v_t = j)$ est une fonction indicatrice (1 si le nœud $t$ se divise sur la variable $j$, 0 sinon),
+    \item $n_t$ est le nombre d’échantillons au nœud $t$,
+    \item $N$ est le nombre total d’échantillons,
+    \item $\Delta I_t$ est la diminution d’impureté au nœud $t$ : $I_t - \frac{n_{\text{left}}}{n_t} I_{\text{left}} - \frac{n_{\text{right}}}{n_t} I_{\text{right}}$.
+\end{itemize}
+
+\paragraph{Avantages de MDI :}
+\begin{itemize}
+    \item Rapide à calculer (effectué pendant l’entraînement)
+    \item Stable (moyenne sur de nombreux arbres)
+    \item Pas besoin de recalculer des prédictions
+\end{itemize}
+
+\paragraph{Inconvénients de MDI :}
+\begin{itemize}
+    \item Biais vers les variables à forte cardinalité (beaucoup de valeurs uniques)
+    \item Biais vers les variables continues par rapport aux catégorielles
+    \item Peut attribuer de l’importance à des variables non informatives si elles sont corrélées avec des variables informatives
+    \item Calculé sur les données d’entraînement, peut ne pas refléter la performance sur des données de test
+\end{itemize}
+
+\subsection{Diminution moyenne de la précision (MDA) / Importance par permutation}
+
+Cette approche mesure la baisse de précision des prédictions lorsque les valeurs d’une variable sont mélangées aléatoirement, rompant sa relation avec la cible.
+
+\begin{enumerate}
+    \item Calculer la précision de référence (souvent avec les prédictions OOB).
+    \item Pour chaque variable $j$ :
+    \begin{enumerate}
+        \item Permuter aléatoirement les valeurs de $j$.
+        \item Recalculer les prédictions avec les données permutées.
+        \item Mesurer la diminution de précision.
+    \end{enumerate}
+    \item Moyenne de la diminution sur tous les arbres.
+\end{enumerate}
+
+Mathématiquement :
+\[
+\text{Importance}(j) = \frac{1}{K} \sum_{k=1}^{K} \big[ \text{Accuracy}_k - \text{Accuracy}_k(\text{permuté } j) \big]
+\]
+
+\paragraph{Avantages de MDA :}
+\begin{itemize}
+    \item Non biaisé par le type de variable
+    \item Reflète l’importance prédictive réelle
+    \item Peut utiliser les données de test pour une estimation plus fiable
+    \item Plus interprétable (mesure directe de l’impact sur les prédictions)
+\end{itemize}
+
+\paragraph{Inconvénients de MDA :}
+\begin{itemize}
+    \item Coûteux en calcul (nécessite de recalculer les prédictions)
+    \item Peut être instable avec de petits jeux de données
+    \item Sous-estime l’importance des variables corrélées (permuter une variable corrélée peut peu affecter la précision si les autres restent)
+\end{itemize}
+
+\subsection{Considérations pratiques}
+
+\begin{enumerate}
+    \item L’échelle compte : normaliser les importances pour qu’elles somment à 1 facilite l’interprétation.
+    \item Problèmes de corrélation : si des variables sont fortement corrélées, l’importance peut se répartir entre elles.
+    \item Relations non-linéaires : certaines interactions complexes peuvent ne pas être capturées.
+    \item Valider les insights : utiliser l’expertise métier pour vérifier la cohérence des résultats.
+\end{enumerate}
+
+\subsection{Exemple d’interprétation}
+
+Supposons que vous prédisez le prix des maisons avec ces importances normalisées :
+\begin{itemize}
+    \item Localisation : 0,35
+    \item Surface habitable : 0,28
+    \item Nombre de chambres : 0,15
+    \item Âge de la maison : 0,12
+    \item Taille du garage : 0,10
+\end{itemize}
+
+Cela indique que la localisation et la surface sont les facteurs principaux (63\% de l’importance totale), tandis que les autres caractéristiques contribuent de manière modeste. Les efforts de collecte de données peuvent donc se concentrer sur ces variables clés.
+
+\medskip
+\noindent
+\textbf{Idée clé :} MDI est rapide mais biaisé, MDA est non biaisé mais coûteux en calcul.
+\section{Avantages des Forêts Aléatoires}
+
+Les forêts aléatoires sont devenues l’un des algorithmes de machine learning les plus populaires, et ce pour de bonnes raisons. Elles offrent une combinaison convaincante de performance, de robustesse et de simplicité d’utilisation, ce qui les rend idéales pour de nombreuses applications réelles.
+
+\subsection{ Robustesse au surapprentissage}
+
+Contrairement aux arbres de décision simples, qui mémorisent facilement les données d’entraînement, les forêts aléatoires résistent au surapprentissage grâce à la moyenne des prédictions de l’ensemble d’arbres. La combinaison de l’échantillonnage bootstrap et de la sélection aléatoire des caractéristiques permet que les erreurs individuelles des arbres aient tendance à s’annuler plutôt qu’à se cumuler. Dans la pratique, il est souvent possible d’ajouter davantage d’arbres sans dégrader la performance sur les données de test, bien que les gains deviennent décroissants.
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.7\linewidth]{logos/overfitting.png}
+    \caption{Overfitting vs Underfitting }
+    \label{fig:Label de la figure}
+\end{figure}
+\subsection{ Prétraitement minimal des données}
+
+Les forêts aléatoires gèrent remarquablement bien les données brutes :
+
+\begin{itemize}
+    \item Pas besoin de normalisation des caractéristiques : les arbres décident selon les points de séparation, pas selon les distances.
+    \item Gestion des types de données mixtes : elles traitent naturellement les variables numériques et catégorielles.
+    \item Pas besoin d’ingénierie de caractéristiques : elles peuvent découvrir automatiquement des interactions complexes.
+    \item Robustesse aux valeurs aberrantes : les divisions sont basées sur des valeurs ordonnées, donc les extrêmes ont un impact limité.
+\end{itemize}
+
+Cela rend les forêts aléatoires particulièrement utiles lorsque l’on souhaite obtenir rapidement des insights sans nettoyage de données approfondi.
+
+\subsection{ Gestion des valeurs manquantes}
+
+Selon les implémentations, les forêts aléatoires peuvent traiter les données manquantes de plusieurs manières :
+
+\begin{itemize}
+    \item \emph{Surrogate splits} : utiliser d’autres variables pour approximer la division lorsque la variable principale est manquante.
+    \item Imputation par moyenne ou mode : remplir les valeurs manquantes par la moyenne ou le mode.
+    \item Catégorie séparée : traiter les valeurs manquantes comme une valeur distincte.
+    \item Proximité OOB : imputer en fonction d’observations similaires.
+\end{itemize}
+
+\subsection{ Non-linéarité naturelle}
+
+Les arbres capturent automatiquement les relations non linéaires et les interactions sans spécification explicite. Si l’âge et le revenu interagissent de manière complexe, les forêts aléatoires le détecteront grâce à la structure des arbres, sans avoir besoin de créer manuellement des termes d’interaction âge$\times$revenu.
+
+\subsection{ Parallélisation et scalabilité}
+
+Chaque arbre s’entraîne indépendamment, ce qui rend les forêts aléatoires facilement parallélisables. Les implémentations modernes exploitent plusieurs cœurs CPU, réduisant ainsi considérablement le temps d’entraînement. Cette scalabilité s’étend également aux très grands jeux de données contenant des millions d’observations.
+
+\subsection{ Validation intégrée}
+
+L’erreur \emph{Out-of-Bag} (OOB) fournit une validation croisée automatique sans jeu de validation séparé, économisant à la fois des données et du temps de calcul. Cela est particulièrement précieux lorsque les données sont limitées.
+
+\subsection{Avantages supplémentaires}
+
+\begin{itemize}
+    \item Importance des variables : contrairement aux réseaux de neurones \emph{black-box}, les forêts aléatoires fournissent des scores d’importance interprétables.
+    \item Estimations de probabilité : en classification, elles fournissent naturellement la probabilité d’appartenance à chaque classe via la proportion d’arbres votant pour chaque classe.
+    \item Gestion des classes déséquilibrées : avec les bons paramètres, elles traitent mieux les classes déséquilibrées que de nombreux autres algorithmes.
+    \item Performances \emph{out-of-the-box} : elles fonctionnent souvent très bien avec les hyperparamètres par défaut.
+    \item Polyvalence : elles excellent dans diverses tâches : classification, régression, sélection de variables, détection d’outliers, clustering et apprentissage semi-supervisé.
+\end{itemize}
+
+Cette polyvalence, combinée à la robustesse et à la simplicité d’utilisation, explique pourquoi les forêts aléatoires restent un algorithme de référence près de 25 ans après leur introduction. Elles offrent une combinaison rare de puissance et de simplicité difficile à surpasser.
+
+\medskip
+\noindent
+\textbf{Avantage clé :} Les forêts aléatoires fonctionnent bien avec un prétraitement minimal et fournissent une validation intégrée via l’erreur OOB.
+\section{Limitations et Défis}
+
+Malgré leurs nombreux atouts, les forêts aléatoires présentent des limitations importantes qu’il est essentiel de connaître avant de les déployer en production.
+
+\subsection{ Difficultés d’interprétation}
+
+Alors que les arbres de décision individuels sont très interprétables, les forêts aléatoires sacrifient cette transparence au profit de la précision. Comprendre pourquoi une forêt aléatoire a produit une prédiction spécifique est difficile :
+
+\begin{itemize}
+    \item Impossible de visualiser facilement 500 arbres.
+    \item L’importance des variables aide, mais n’explique pas les prédictions individuelles.
+    \item Le chemin de décision pour une seule prédiction implique des centaines de nœuds.
+    \item Expliquer le modèle à des parties prenantes devient complexe.
+\end{itemize}
+
+Pour les applications nécessitant la confiance humaine ou la conformité réglementaire (diagnostic médical, approbation de prêts), cette opacité peut poser problème.
+
+\subsection{ Besoins en mémoire}
+
+Les forêts aléatoires stockent chaque arbre en mémoire, et chaque arbre peut être volumineux :
+
+\begin{itemize}
+    \item Un arbre peut contenir des milliers de nœuds.
+    \item Chaque nœud stocke le critère de division, le seuil et la prédiction.
+    \item Avec 500 à 1000 arbres, la consommation mémoire augmente considérablement.
+\end{itemize}
+
+Pour un jeu de données de 1 million d’échantillons et 100 variables, une forêt aléatoire peut nécessiter plusieurs gigaoctets de RAM, ce qui devient problématique pour des déploiements mobiles ou embarqués.
+
+\subsection{ Vitesse de prédiction}
+
+Bien que l’entraînement soit facilement parallélisable, la prédiction nécessite généralement de parcourir tous les arbres séquentiellement :
+
+\begin{itemize}
+    \item Chaque prédiction traverse des centaines d’arbres.
+    \item Plus lente que les modèles linéaires ou les arbres uniques.
+    \item Peut poser problème pour des applications en temps réel (trading haute fréquence, publicité en ligne).
+\end{itemize}
+
+Pour une forêt de 1000 arbres, prédire sur de grands jeux de données peut être long.
+
+\subsection{ Performance sur données hautement dimensionnelles et clairsemées}
+
+Les forêts aléatoires peuvent être moins performantes sur des données très hautes dimensionnelles et clairsemées, fréquentes dans :
+
+\begin{itemize}
+    \item Classification de texte (milliers de mots, majoritairement zéros)
+    \item Génomique (millions de marqueurs génétiques)
+    \item Systèmes de recommandation (millions d’utilisateurs/objets)
+\end{itemize}
+
+La sélection aléatoire des variables devient moins efficace lorsque la plupart des variables sont non pertinentes, et les modèles basés sur les arbres gèrent moins bien la rareté que les modèles linéaires ou les réseaux de neurones.
+
+\subsection{ Limites d’extrapolation}
+
+Ce problème est particulièrement important en régression. Les forêts aléatoires ne peuvent pas prédire des valeurs en dehors de l’intervalle observé dans les données d’entraînement :
+
+\begin{itemize}
+    \item Si les cibles d’entraînement vont de 10 à 100, les prédictions resteront dans cet intervalle.
+    \item Les arbres divisent les données en régions et font la moyenne des valeurs dans chaque région.
+    \item Aucune région ne peut générer une valeur hors de l’intervalle de l’entraînement.
+\end{itemize}
+
+\textbf{Exemple :} prédire le prix des maisons lorsque les données d’entraînement varient de 100k\$ à 500k\$. Le modèle ne pourra jamais prédire 600k\$.
+
+\subsection{Autres limitations}
+
+\begin{itemize}
+    \item Importance des variables biaisée : MDI favorise les variables continues ou à forte cardinalité.
+    \item Manque de lissage : les prédictions sont par morceaux constants (régression) ou votes majoritaires (classification).
+    \item Difficulté avec certaines relations : peut avoir du mal avec des relations linéaires, des événements rares et des dépendances temporelles.
+    \item Réglage des hyperparamètres peu intuitif : comprendre pourquoi certains paramètres aident est moins clair que pour d’autres algorithmes.
+    \item Pas toujours le meilleur choix : souvent surpassé par le gradient boosting sur données structurées, le deep learning sur données complexes, et les modèles linéaires sur données clairsemées.
+\end{itemize}
+
+Comprendre ces limitations permet de décider judicieusement quand utiliser les forêts aléatoires et quand d’autres méthodes peuvent mieux convenir.
+
+\medskip
+\noindent
+\textbf{Limitation clé :} Les forêts aléatoires ne peuvent pas extrapoler en dehors de l’intervalle des données d’entraînement pour les tâches de régression.
+\section*{Conclusion}
+
+Les forêts aléatoires constituent un algorithme de machine learning puissant et polyvalent. Grâce à la combinaison de l'échantillonnage bootstrap et de la sélection aléatoire de variables, elles offrent une grande robustesse au surapprentissage, une capacité naturelle à gérer les relations non linéaires, et une validation intégrée via l’erreur \emph{Out-of-Bag}. Bien qu'elles nécessitent plus de mémoire et soient moins interprétables que les arbres simples, leur performance élevée, leur résistance aux valeurs aberrantes et leur aptitude à traiter différents types de données en font un outil incontournable pour la classification, la régression et d'autres applications analytiques. Les forêts aléatoires illustrent parfaitement la puissance des méthodes d'ensemble dans l'apprentissage automatique.
