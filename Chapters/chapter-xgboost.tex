@@ -1,0 +1,189 @@
+\chapter{XGBoost (eXtreme Gradient Boosting)}
+
+
+
+
+
+\section{Introduction}
+
+XGBoost, acronyme de \textit{eXtreme Gradient Boosting}, représente une avancée majeure dans le domaine des algorithmes d'apprentissage automatique supervisé. Il s'agit d'un algorithme de gradient boosting hautement optimisé et scalable, positionné comme une référence pour les tâches de classification et de régression sur données tabulaires. Introduit par Tianqi Chen et Carlos Guestrin dans leur article séminal de 2016~\cite{chen_2016}, XGBoost a rapidement conquis la communauté scientifique et industrielle grâce à sa combinaison unique de précision, de vitesse et de robustesse.
+
+Son succès est attesté par ses victoires répétées dans les compétitions de data science sur Kaggle, où il a souvent dominé les classements, ainsi que par son adoption massive dans des secteurs variés tels que la finance (détection de fraude), la santé (prédiction de maladies), l'e-commerce (recommandations) et les transports (prévision de trafic). Ces applications réelles soulignent sa capacité à gérer des volumes de données massifs avec une efficacité remarquable.
+
+Par rapport à Random Forest, qui repose sur le \textit{bagging} (construction parallèle d'arbres indépendants pour minimiser la variance), XGBoost utilise le \textit{boosting} : une méthode séquentielle où chaque arbre corrige les erreurs des précédents, réduisant ainsi le biais global du modèle.
+
+Ce chapitre vise à introduire les principes fondamentaux du gradient boosting, à détailler les innovations mathématiques et algorithmiques propres à XGBoost, à explorer ses fonctionnalités avancées et optimisations systèmes, et à discuter de ses avantages, limites et comparaisons avec d'autres approches, afin de fournir une compréhension complète et pratique de cet algorithme essentiel.
+
+
+
+
+\section{Principe du Gradient Boosting}
+
+\subsection{Intuition : apprentissage par correction d'erreurs}
+Le principe clé du gradient boosting est l'apprentissage itératif. Contrairement à la construction parallèle des forêts aléatoires, le boosting construit le modèle étape par étape. Chaque nouvel arbre est entraîné non pas sur la variable cible originale, mais sur les erreurs résiduelles des arbres précédents.
+
+Cette méthode peut être vue comme une descente de gradient dans l'espace fonctionnel. Si l'on considère le modèle global comme un point dans l'espace des fonctions possibles, chaque nouvel arbre ajouté représente un pas dans la direction opposée du gradient de la fonction de perte, minimisant ainsi l'erreur globale de manière incrémentale.
+
+\subsection{Formulation mathématique du gradient boosting}
+L'objectif est de trouver une fonction $F$ qui minimise la perte globale sur un ensemble de $n$ observations :
+\begin{equation}
+    \min_F \sum_{i=1}^{n} L(y_i, F(x_i))
+\end{equation}
+où $L$ est une fonction de perte convexe et différentiable.
+
+Le modèle est construit de manière additive. À l'étape $m$, la prédiction $F_m(x)$ est mise à jour selon :
+\begin{equation}
+    F_m(x) = F_{m-1}(x) + \eta h_m(x)
+\end{equation}
+Ici, $h_m(x)$ est le nouvel arbre ajouté et $\eta$ (taux d'apprentissage) contrôle l'amplitude de la mise à jour pour éviter le surapprentissage.
+
+Le nouvel arbre $h_m$ est entraîné pour approximer le gradient négatif de la perte, aussi appelé pseudo-résidu $g_i$ pour chaque observation $i$ :
+\begin{equation}
+    g_i = - \left[ \frac{\partial L(y_i, F(x_i))}{\partial F(x_i)} \right]_{F(x)=F_{m-1}(x)}
+\end{equation}
+
+Différentes fonctions de perte peuvent être utilisées selon le problème : erreur quadratique (L2) pour la régression, \textit{log-loss} pour la classification binaire, ou erreur absolue (L1) pour une plus grande robustesse.
+
+\subsection{Limitations du gradient boosting classique}
+Le Gradient Boosting Machine (GBM) traditionnel souffre de certaines limitations :
+\begin{itemize}
+    \item \textbf{Absence de régularisation explicite :} Le risque de surapprentissage est élevé si le nombre d'arbres est trop grand ou leur profondeur trop importante.
+    \item \textbf{Optimisation de premier ordre uniquement :} L'utilisation seule du gradient limite la précision de l'approximation de la perte.
+    \item \textbf{Gestion sous-optimale des valeurs manquantes :} Nécessite souvent un pré-traitement coûteux.
+    \item \textbf{Performances limitées sur grandes données :} L'implémentation standard manque d'optimisations systèmes pour passer à l'échelle.
+\end{itemize}
+
+\section{XGBoost : Innovations Mathématiques}
+XGBoost adresse ces limitations par une formulation mathématique régularisée et une approximation de second ordre.
+
+\subsection{Fonction objectif régularisée}
+La fonction objectif à minimiser à chaque étape $t$ inclut désormais un terme de régularisation $\Omega$ :
+\begin{equation}
+    \mathcal{L}(\phi) = \sum_{i=1}^n L(y_i, \hat{y}_i) + \sum_{k=1}^K \Omega(f_k)
+\end{equation}
+Le terme de régularisation pour un arbre $f$ dépanne de sa structure et de ses poids :
+\begin{equation}
+    \Omega(f) = \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T} w_j^2 + \alpha \sum_{j=1}^{T} |w_j|
+\end{equation}
+Chaque terme a une signification précise :
+\begin{itemize}
+    \item $\gamma$ (gamma) : pénalité sur le nombre de feuilles $T$, contrôlant la complexité structurelle de l'arbre.
+    \item $\lambda$ (lambda) : régularisation L2 sur les poids des feuilles $w_j$, favorisant le lissage (analogue à Ridge).
+    \item $\alpha$ (alpha) : régularisation L1 sur les poids, favorisant la parcimonie (analogue à Lasso).
+\end{itemize}
+
+\subsection{Approximation de Taylor de second ordre}
+Pour optimiser cette fonction objectif, XGBoost utilise un développement de Taylor de second ordre autour de la prédiction précédente $\hat{y}^{(t-1)}$ :
+\begin{equation}
+    L(y_i, \hat{y}^{(t-1)} + f_t(x_i)) \approx L(y_i, \hat{y}^{(t-1)}) + g_i f_t(x_i) + \frac{1}{2}h_i f_t^2(x_i)
+\end{equation}
+où $g_i$ et $h_i$ sont définis comme :
+\begin{equation}
+    g_i = \partial_{\hat{y}^{(t-1)}} L(y_i, \hat{y}^{(t-1)}), \quad h_i = \partial^2_{\hat{y}^{(t-1)}} L(y_i, \hat{y}^{(t-1)})
+\end{equation}
+L'ajout de l'information de courbure (via la Hessienne $h_i$) permet une convergence plus rapide et une meilleure stabilité numérique par rapport à l'approche de premier ordre utilisée dans le GBM classique.
+
+\subsection{Calcul du poids optimal des feuilles}
+En regroupant les instances par feuille $j$ (ensemble $I_j = \{i | q(x_i) = j\}$), on peut réécrire l'objectif approximé et trouver analytiquement le poids optimal $w_j^*$ :
+\begin{equation}
+    \tilde{\mathcal{L}}^{(t)} = \sum_{j=1}^T \left[ \left(\sum_{i \in I_j} g_i\right) w_j + \frac{1}{2} \left(\sum_{i \in I_j} h_i + \lambda\right) w_j^2 \right] + \gamma T
+\end{equation}
+La solution qui minimise cette équation quadratique est :
+\begin{equation}
+    w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda}
+\end{equation}
+
+\subsection{Score de qualité d'une structure d'arbre}
+En réinjectant $w_j^*$ dans l'objectif, on obtient un score de structure permettant d'évaluer la qualité d'un arbre. Cela permet de définir le gain obtenu lors d'une division d'une feuille en deux (gauche $L$ et droite $R$) :
+\begin{equation}
+    \text{Gain} = \frac{1}{2}\left[\frac{G_L^2}{H_L+\lambda} + \frac{G_R^2}{H_R+\lambda} - \frac{(G_L+G_R)^2}{H_L+H_R+\lambda}\right] - \gamma
+\end{equation}
+où $G = \sum g_i$ et $H = \sum h_i$.
+Cette formule sert de critère pour décider s'il faut effectuer un split. Le terme $\gamma$ agit comme un seuil minimal : si le gain calculé est inférieur à $\gamma$, la branche n'est pas créée. Cela réalise un élagage (\textit{pruning}) automatique pendant la construction de l'arbre.
+
+\section{Fonctionnalités Spécifiques de XGBoost}
+
+\subsection{Gestion native des valeurs manquantes}
+XGBoost utilise un algorithme de \textit{Sparsity-aware Split Finding}. Lors de la recherche du meilleur split, il teste automatiquement d'envoyer les valeurs manquantes vers la branche gauche ou droite et choisit la direction qui maximise le gain. Cela permet de gérer les données incomplètes nativement, sans imputation préalable.
+
+\subsection{Gestion du déséquilibre de classes}
+Pour les jeux de données déséquilibrés, le paramètre \texttt{scale\_pos\_weight} permet de rééquilibrer l'importance des classes :
+\begin{equation}
+    \text{scale\_pos\_weight} = \frac{n_{\text{classe majoritaire}}}{n_{\text{classe minoritaire}}}
+\end{equation}
+Ce poids est appliqué aux gradients et hessiennes des exemples positifs, augmentant leur influence lors de l'entraînement. C'est crucial pour des applications comme la détection de fraude ou le diagnostic de maladies rares.
+
+\subsection{Subsampling stochastique}
+Pour améliorer la généralisation, XGBoost emprunte le principe de sous-échantillonnage aux Random Forests :
+\begin{itemize}
+    \item \texttt{subsample} : fraction des observations tirées aléatoirement pour construire chaque arbre.
+    \item \texttt{colsample\_bytree}, \texttt{colsample\_bylevel}, \texttt{colsample\_bynode} : fraction des colonnes (features) utilisées à différents niveaux de construction.
+\end{itemize}
+Cela permet de décorréler les arbres et d'ajouter une couche supplémentaire de régularisation.
+
+\subsection{Early stopping}
+L'entraînement peut être configuré pour s'arrêter prématurément si la performance sur un jeu de validation ne s'améliore pas après un certain nombre d'itérations (\textit{patience}). Cela détermine automatiquement le nombre optimal d'arbres et prévient le surapprentissage tardif.
+
+\section{Optimisations Systèmes}
+
+\subsection{Parallélisation}
+Bien que le boosting soit séquentiel par nature (l'arbre $t$ dépend de l'arbre $t-1$), XGBoost parallélise la construction à l'intérieur de chaque arbre. La recherche du meilleur split sur toutes les features est effectuée en parallèle grâce à une structure de données en colonnes (\textit{Column Block}).
+
+\subsection{Scalabilité}
+XGBoost implémente plusieurs techniques pour gérer les données volumineuses :
+\begin{itemize}
+    \item \textbf{Histogram-based splits :} Les données continues sont discrétisées en \textit{bins}, réduisant la complexité de recherche de split.
+    \item \textbf{Out-of-core computing :} Optimisation des accès disques pour traiter des données ne tenant pas en mémoire vive.
+    \item \textbf{Weighted Quantile Sketch :} Un algorithme d'approximation distribué pour trouver les quantiles sur des données pondérées, facilitant la création d'histogrammes précis.
+\end{itemize}
+
+\section{Hyperparamètres Clés}
+
+\subsection{Contrôle de la complexité}
+\begin{itemize}
+    \item \texttt{max\_depth} : Profondeur maximale de l'arbre (typiquement entre 3 et 10).
+    \item \texttt{min\_child\_weight} : Somme minimale des poids (Hessienne) requise dans une feuille pour autoriser une partition.
+    \item \texttt{gamma} : Réduction de perte minimale requise pour faire un split.
+\end{itemize}
+
+\subsection{Régularisation et Apprentissage}
+\begin{itemize}
+    \item \texttt{lambda} ($\lambda$) et \texttt{alpha} ($\alpha$) : Termes de régularisation L2 et L1.
+    \item \texttt{learning\_rate} ($\eta$) : Facteur de réduction de l'impact de chaque nouvel arbre.
+\end{itemize}
+
+\subsection{Sampling et Autres}
+\begin{itemize}
+    \item \texttt{subsample} et \texttt{colsample\_bytree} : Contrôle du caractère stochastique.
+    \item \texttt{scale\_pos\_weight} : Gestion du déséquilibre.
+    \item \texttt{n\_estimators} associé à \texttt{early\_stopping\_rounds}.
+\end{itemize}
+
+\section{Avantages et Limites}
+
+\subsection{Avantages}
+XGBoost offre une combinaison unique de performance (état de l'art sur données tabulaires), de robustesse (régularisation intégrée, gestion valeurs manquantes) et de rapidité (optimisations systèmes). Sa flexibilité permet de définir des fonctions de perte et métriques personnalisées.
+
+\subsection{Limites}
+Cependant, il reste une "boîte noire" nécessitant des outils d'explicabilité comme SHAP. Son réglage est complexe avec plus de 20 hyperparamètres, et il peut être sensible au bruit. Sa nature séquentielle peut être un frein par rapport à la parallélisation totale des Random Forests lors de l'entraînement.
+
+\subsection{Comparaison : XGBoost vs Random Forest}
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Critère} & \textbf{XGBoost} & \textbf{Random Forest} \\
+\hline
+Performance (Données Tabulaires) & Excellente & Très Bonne \\
+Vitesse d'entraînement & Moyenne & Très Rapide \\
+Interprétabilité & Faible & Moyenne \\
+Facilité d'usage & Moyenne & Très Facile \\
+Résistance au surapprentissage & Très Bonne & Excellente \\
+\hline
+\end{tabular}
+\caption{Comparaison synthétique : XGBoost vs Random Forest}
+\label{tab:xgb_vs_rf}
+\end{table}
+
+\section{Conclusion}
+XGBoost représente l'état de l'art du gradient boosting grâce à ses trois piliers : la précision (via l'optimisation de second ordre régularisée), l'efficacité (parallélisation et gestion mémoire), et la praticité (fonctionnalités natives). C'est le choix optimal lorsque la performance prédictive est le critère critique, surpassant souvent les méthodes classiques malgré une complexité de mise en œuvre plus élevée. Bien que des successeurs comme LightGBM et CatBoost existent, XGBoost demeure une référence incontournable.
