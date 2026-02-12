@@ -1,21 +1,114 @@
 \newpage
-\chapterstar{Introduction Générale}
+\chapter*{Introduction Générale}
+\addcontentsline{toc}{chapter}{Introduction Générale}
 
-Le machine learning connaît une croissance exponentielle depuis les années 2010, portée par l’augmentation de la puissance de calcul, la disponibilité massive de données et les avancées algorithmiques. Dans ce contexte, les algorithmes de classification et de régression constituent les piliers fondamentaux de l’apprentissage supervisé. Ils sont aujourd’hui déployés dans des domaines critiques tels que la médecine prédictive, la détection de fraude, la reconnaissance d’images ou encore l’analyse de sentiment.
+%---------------------------------------------------------------
+\section*{Contexte et enjeux de la détection du diabète}
+%---------------------------------------------------------------
 
-Parmi ces applications, la détection de fraude bancaire occupe une place particulière en raison de ses enjeux économiques majeurs et de ses contraintes techniques spécifiques. Le problème se caractérise par un déséquilibre extrême des classes, une nécessité de prise de décision en temps réel, des coûts métier fortement asymétriques entre les erreurs, et des exigences réglementaires strictes en matière d’explicabilité des décisions. Dans ce cadre, la question centrale n’est pas seulement de maximiser la performance prédictive, mais de trouver un compromis réaliste entre efficacité, interprétabilité et viabilité opérationnelle.
+Le diabète constitue l'une des maladies chroniques les plus répandues à l'échelle
+mondiale, représentant un défi majeur pour les systèmes de santé publique. Selon
+l'Organisation Mondiale de la Santé (OMS), le nombre de personnes atteintes de diabète
+a quadruplé depuis 1980, atteignant aujourd'hui plus de 500 millions d'individus dans
+le monde, avec une prévalence croissante aussi bien dans les pays développés que dans
+les pays en développement. Cette maladie, caractérisée par une hyperglycémie chronique
+résultant d'une insuffisance de production ou d'utilisation de l'insuline, entraîne de graves
+complications à long terme : maladies cardiovasculaires, insuffisance rénale, neuropathies
+et cécité.
 
-Ce mémoire s’inscrit dans cette problématique et vise à proposer une analyse comparative rigoureuse de trois algorithmes majeurs du machine learning supervisé appliqués à la détection de fraude par carte de crédit : les Support Vector Machines (SVM), les Random Forests et XGBoost. Bien qu’ils poursuivent le même objectif de prédiction, ces modèles reposent sur des fondements théoriques radicalement différents et présentent des comportements distincts face aux contraintes du monde bancaire réel.
+Au-delà de ses conséquences sanitaires directes, le diabète génère des coûts économiques
+considérables, tant pour les patients que pour les systèmes de santé. Son diagnostic tardif,
+fréquent dans les régions à ressources limitées, aggrave le pronostic et alourdit la charge
+thérapeutique. Dans ce contexte, la détection précoce et fiable du diabète constitue un
+enjeu clinique et économique de premier ordre, justifiant le recours à des approches
+innovantes capables d'exploiter les données médicales disponibles.
 
-L’objectif de ce travail est triple. Premièrement, il s’agit de présenter les bases théoriques de chaque algorithme de manière précise, en mettant l’accent sur les propriétés réellement pertinentes pour la détection de fraude. Deuxièmement, ce mémoire vise à fournir un cadre d’aide à la décision permettant d’orienter le choix de l’algorithme en fonction des caractéristiques du problème, en intégrant à la fois des métriques académiques classiques et des indicateurs métier concrets. Troisièmement, ce travail cherche à challenger les approches existantes en proposant des configurations algorithmiques alternatives capables d’améliorer les performances observées dans la littérature récente.
+%---------------------------------------------------------------
+\section*{Motivation du recours aux méthodes d'apprentissage automatique}
+%---------------------------------------------------------------
 
-Le document est structuré en trois chapitres complémentaires. Le premier chapitre est consacré aux fondements théoriques des trois algorithmes étudiés. Il présente le principe de maximisation de la marge des SVM et le rôle du noyau dans la gestion de la non-linéarité, l’approche ensembliste des Random Forests basée sur le bagging et la réduction de la variance, ainsi que le principe du gradient boosting séquentiel implémenté par XGBoost, accompagné de ses mécanismes avancés de régularisation. Une attention particulière est portée aux stratégies de gestion du déséquilibre des classes, élément central de la détection de fraude.
+Face à la complexité des mécanismes biologiques impliqués dans le diabète et à la
+multidimensionnalité des données cliniques (glycémie, indice de masse corporelle, pression
+artérielle, âge, antécédents familiaux, etc.), les approches diagnostiques traditionnelles
+reposant sur des seuils cliniques fixes atteignent rapidement leurs limites. Ces méthodes
+ne permettent pas de capturer les interactions non linéaires entre les variables, ni de
+personnaliser le diagnostic en fonction du profil individuel du patient.
 
-Le deuxième chapitre propose une analyse comparative des trois approches selon des critères directement liés aux contraintes opérationnelles du domaine bancaire. Sont notamment étudiés la complexité algorithmique, le temps d’entraînement, la latence de prédiction, la gestion native ou artificielle du déséquilibre, l’interprétabilité des modèles, leur robustesse face à l’évolution des comportements frauduleux, ainsi que leur consommation mémoire en contexte de déploiement. Cette analyse vise à dépasser une comparaison purement académique pour adopter une perspective orientée production.
+L'apprentissage automatique (\textit{machine learning}) offre une alternative particulièrement
+prometteuse. Grâce à leur capacité à identifier des patterns complexes dans des jeux de
+données de grande dimension, les algorithmes supervisés peuvent apprendre à discriminer
+les patients diabétiques des individus sains avec une précision souvent supérieure à celle
+des critères cliniques classiques. Ils permettent également d'intégrer de manière cohérente
+des variables hétérogènes et de produire des scores de risque individualisés, ouvrant la
+voie à une médecine prédictive et préventive plus efficace.
 
+%---------------------------------------------------------------
+\section*{Problématique de recherche}
+%---------------------------------------------------------------
 
-Le troisième chapitre constitue le cœur expérimental de ce mémoire. Il présente une application pratique sur un jeu de données réel de transactions bancaires anonymisées. Plusieurs configurations algorithmiques sont implémentées et comparées, incluant des variantes de SVM avec pondération des classes, de Random Forest avec différentes techniques de rééchantillonnage, ainsi que de XGBoost exploitant ses mécanismes natifs de gestion du déséquilibre. L’évaluation ne se limite pas aux métriques classiques de classification, mais intègre un modèle de coût réaliste afin de mesurer l’impact financier réel des décisions de chaque algorithme.
+Si plusieurs algorithmes d'apprentissage supervisé ont été appliqués à la détection du
+diabète dans la littérature, le choix de l'algorithme optimal demeure une question ouverte.
+En effet, différents modèles reposent sur des hypothèses et des architectures fondamentalement distinctes, ce qui se traduit par des comportements variés selon les caractéristiques
+du jeu de données : dimensionnalité, présence de valeurs manquantes, déséquilibre entre
+classes, ou encore bruit dans les mesures cliniques.
 
-Un accent particulier est mis sur l’optimisation du seuil de décision. Contrairement à l’approche standard utilisant un seuil fixe, ce travail adopte une stratégie orientée métier visant à maximiser le bénéfice net, en tenant compte du fait qu’en détection de fraude, les faux négatifs sont généralement bien plus coûteux que les faux positifs. L’impact du feature engineering sur la performance des modèles est également étudié afin d’évaluer la sensibilité de chaque algorithme à la qualité des représentations d’entrée.
+La problématique centrale de ce travail peut donc être formulée comme suit :
+\textit{parmi les algorithmes de machine learning supervisé (Support Vector Machines (SVM),
+	Random Forests et XGBoost), lequel offre les meilleures performances pour la détection
+	du diabète, et dans quelles conditions chacun est-il préférable ?} Cette question soulève
+des enjeux à la fois théoriques, liés aux fondements mathématiques de chaque modèle,
+et pratiques, relatifs à leur utilisabilité en contexte clinique réel.
 
-La conclusion synthétise les résultats théoriques et empiriques obtenus afin de formuler des recommandations claires et pragmatiques. Elle répond notamment aux questions suivantes : dans quels contextes privilégier une Random Forest ? Quand l’investissement dans le réglage fin de XGBoost est-il justifié ? Les SVM conservent-ils une pertinence dans les systèmes modernes de détection de fraude bancaire ? À travers cette analyse, ce mémoire ambitionne de contribuer à une meilleure compréhension des compromis réels entre performance, coût et explicabilité dans les systèmes de détection de fraude en production.
+%---------------------------------------------------------------
+\section*{Objectifs du travail}
+%---------------------------------------------------------------
+
+Ce rapport poursuit trois objectifs complémentaires.
+
+\textbf{Premièrement}, il s'agit de présenter de manière rigoureuse les fondements théoriques
+des trois algorithmes étudiés (SVM, Random Forests et XGBoost) en mettant en
+évidence les propriétés qui conditionnent leurs performances sur des données médicales.
+
+\textbf{Deuxièmement}, ce travail vise à construire un cadre d'évaluation comparative structuré,
+intégrant des métriques de classification classiques (précision, rappel, F1-score, AUC-ROC)
+ainsi que des considérations pratiques liées au déploiement clinique, notamment la gestion
+du déséquilibre des classes et l'interprétabilité des décisions.
+
+\textbf{Troisièmement}, ce travail cherche à formuler des recommandations concrètes sur le
+choix algorithmique en fonction des contraintes du contexte médical : disponibilité des
+données, exigences de temps de réponse, besoin d'explicabilité pour les praticiens de
+santé, et robustesse face aux données imparfaites.
+
+%---------------------------------------------------------------
+\section*{Démarche générale adoptée}
+%---------------------------------------------------------------
+
+Pour atteindre ces objectifs, une démarche en trois temps a été adoptée. Dans un
+premier temps, une étude théorique approfondie des trois algorithmes est conduite, portant
+sur leurs mécanismes d'apprentissage, leurs hyperparamètres clés et leurs comportements
+face aux spécificités des données médicales. Dans un second temps, un état de l'art est
+réalisé afin de recenser les travaux existants sur l'application de ces méthodes à la
+détection du diabète, et d'identifier les lacunes que ce travail cherche à combler. Enfin,
+une évaluation expérimentale est menée sur un jeu de données réel de patients, permettant
+une comparaison empirique rigoureuse des trois modèles selon plusieurs axes de
+performance.
+
+Une attention particulière est portée à la gestion du déséquilibre des classes ; les cas positifs (diabétiques) étant généralement moins représentés, ainsi qu'à l'optimisation du seuil de décision, deux facteurs critiques pour la pertinence clinique des prédictions.
+
+%---------------------------------------------------------------
+\section*{Organisation du rapport}
+%---------------------------------------------------------------
+
+Ce rapport est structuré en six parties complémentaires. Le \textbf{Chapitre 1} est
+consacré aux Support Vector Machines (SVM), en couvrant leur formalisme mathématique,
+le principe de maximisation de la marge et l'astuce du noyau pour les données non
+linéairement séparables. Le \textbf{Chapitre 2} présente les Random Forests, depuis les
+fondements de l'apprentissage en ensemble jusqu'aux mécanismes de bagging, de sélection
+aléatoire des caractéristiques et d'estimation de l'erreur out-of-bag. Le \textbf{Chapitre 3}
+détaille XGBoost, en insistant sur ses innovations mathématiques : régularisation,
+approximation de Taylor de second ordre, et ses optimisations systèmes. Le
+\textbf{Chapitre 4} propose un état de l'art sur l'application des méthodes d'apprentissage
+automatique à la détection du diabète. Le \textbf{Chapitre 5} présente la méthodologie et les
+résultats expérimentaux de l'évaluation comparative des trois modèles. Enfin, le
+\textbf{Chapitre 6} synthétise les résultats et formule des recommandations pratiques pour
+le choix du modèle en contexte clinique. Une conclusion générale clôt le document.

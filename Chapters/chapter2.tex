@@ -1,4 +1,4 @@
-\chapter{Random Forests (RF) }
+\chapter{Random Forests (RF)}
 \section{Introduction}
 
 Les praticiens du machine learning sont souvent confrontés à un défi fondamental : les arbres de décision simples, bien qu’intuitifs et interprétables, ont tendance à surapprendre (\emph{overfitting}) les données d’entraînement. Un arbre de décision qui mémorise parfaitement chaque exemple d’apprentissage aura généralement de mauvaises performances sur de nouvelles données non vues. C’est dans ce contexte que les forêts aléatoires (\emph{Random Forests}) entrent en jeu.
@@ -551,6 +551,8 @@ Comprendre ces limitations permet de décider judicieusement quand utiliser les 
 \medskip
 \noindent
 \textbf{Limitation clé :} Les forêts aléatoires ne peuvent pas extrapoler en dehors de l’intervalle des données d’entraînement pour les tâches de régression.
-\section*{Conclusion}
 
-Les forêts aléatoires constituent un algorithme de machine learning puissant et polyvalent. Grâce à la combinaison de l'échantillonnage bootstrap et de la sélection aléatoire de variables, elles offrent une grande robustesse au surapprentissage, une capacité naturelle à gérer les relations non linéaires, et une validation intégrée via l’erreur \emph{Out-of-Bag}. Bien qu'elles nécessitent plus de mémoire et soient moins interprétables que les arbres simples, leur performance élevée, leur résistance aux valeurs aberrantes et leur aptitude à traiter différents types de données en font un outil incontournable pour la classification, la régression et d'autres applications analytiques. Les forêts aléatoires illustrent parfaitement la puissance des méthodes d'ensemble dans l'apprentissage automatique.
+\section*{Conclusion}
+Les forêts aléatoires constituent un algorithme de machine learning puissant et polyvalent. Grâce à la combinaison de l'échantillonnage bootstrap et de la sélection aléatoire de variables, elles offrent une grande robustesse au surapprentissage, une capacité naturelle à gérer les relations non linéaires, et une validation intégrée via l'erreur Out-of-Bag. Bien qu'elles nécessitent plus de mémoire et soient moins interprétables que les arbres simples, leur performance élevée, leur résistance aux valeurs aberrantes et leur aptitude à traiter différents types de données en font un outil incontournable pour la classification, la régression et d'autres applications analytiques. Les forêts aléatoires illustrent parfaitement la puissance des méthodes d'ensemble dans l'apprentissage automatique.
+
+Toutefois, les méthodes d'ensemble ne s'arrêtent pas aux forêts aléatoires. Dans le chapitre suivant, nous aborderons XGBoost (eXtreme Gradient Boosting), un algorithme qui pousse encore plus loin l'approche ensembliste en adoptant une stratégie de boosting plutôt que de bagging. Contrairement aux Random Forests qui construisent des arbres indépendants en parallèle, XGBoost construit ses arbres de manière séquentielle, chaque nouvel arbre cherchant à corriger les erreurs des arbres précédents. Cette technique de gradient boosting, combinée à de nombreuses optimisations algorithmiques, fait de XGBoost l'un des algorithmes les plus performants et les plus utilisés dans les compétitions de machine learning et les applications industrielles.

@@ -1,1 +1,364 @@
-\chapter{Quatrième Chapitre}
+\chapter{État de l'art sur la détection du diabète à l'aide des méthodes d'apprentissage automatique}
+
+%----------------------------------------------------------------
+\section{Introduction}
+%----------------------------------------------------------------
+
+Le diabète sucré (\textit{Diabetes Mellitus}, DM) est une maladie métabolique chronique
+caractérisée par une hyperglycémie persistante, c'est-à-dire une concentration anormalement
+élevée de glucose dans le sang. Cette anomalie résulte soit d'une déficience de la sécrétion
+d'insuline par le pancréas, soit d'une résistance des cellules à l'action de cette hormone,
+soit d'une combinaison des deux mécanismes~\citep{iparraguirre2023}. L'insuline, hormone
+produite par les cellules bêta des îlots de Langerhans, joue un rôle fondamental dans la
+régulation glycémique : elle permet aux cellules d'absorber le glucose circulant dans le sang
+pour le convertir en énergie. En son absence ou en cas de résistance à son action, le glucose
+s'accumule dans la circulation sanguine, entraînant à long terme des dommages irréversibles
+sur de nombreux organes et systèmes.
+
+\subsection*{Types de diabète}
+
+On distingue principalement trois formes cliniques du diabète :
+
+\textbf{Le diabète de type 1 (DT1)} est une maladie auto-immune dans laquelle le système
+immunitaire attaque et détruit les cellules bêta pancréatiques productrices d'insuline. Il
+représente environ 5 à 10\% des cas diagnostiqués et se manifeste généralement durant
+l'enfance ou l'adolescence. Les patients atteints de DT1 dépendent à vie d'injections
+d'insuline exogène pour leur survie~\citep{iparraguirre2023, zou2018}.
+
+\textbf{Le diabète de type 2 (DT2)} constitue la forme la plus répandue, représentant plus
+de 90\% des cas mondiaux. Il se caractérise par une résistance progressive à l'insuline,
+combinée à une sécrétion pancréatique insuffisante pour compenser cette résistance. Son
+développement est fortement lié au mode de vie — sédentarité, obésité, alimentation
+hypercalorique — ainsi qu'à une prédisposition génétique. Contrairement au DT1, il survient
+le plus souvent à l'âge adulte, bien qu'une tendance croissante soit observée chez les
+adolescents dans les pays développés~\citep{zou2018}.
+
+\textbf{Le diabète gestationnel} apparaît durant la grossesse chez des femmes ne présentant
+pas de diabète préalable. Il se résorbe généralement après l'accouchement, mais augmente
+significativement le risque de développer un DT2 ultérieurement, aussi bien chez la mère
+que chez l'enfant. La base de données Pima Indians Diabetes Database (PIDD), utilisée dans
+ce travail, concerne exclusivement des femmes adultes de la communauté Pima, une population
+présentant une prévalence exceptionnellement élevée de DT2, dont une part importante est
+liée à des antécédents de diabète gestationnel.
+
+\subsection*{Facteurs de risque et variables cliniques déterminantes}
+
+La progression vers le diabète de type 2 est influencée par un ensemble de facteurs
+biologiques et comportementaux. Parmi les principaux indicateurs cliniques figurant dans la
+littérature et dans la PIDD, on trouve~\citep{zou2018, iparraguirre2023} :
+
+\begin{itemize}
+	\item \textbf{La glycémie (glucose plasmatique)} : principal marqueur diagnostique, mesurée
+	à jeun ou après une charge orale en glucose. Un taux supérieur à 126 mg/dL à jeun est
+	diagnostique du diabète selon les critères de l'American Diabetes Association (ADA). C'est
+	la variable de plus grande importance prédictive dans les études sur la PIDD.
+	
+	\item \textbf{L'indice de masse corporelle (IMC ou BMI)} : fortement corrélé au risque de DT2,
+	un IMC supérieur à 30 kg/m\textsuperscript{2} indique une obésité et constitue un facteur
+	de risque majeur de résistance à l'insuline.
+	
+	\item \textbf{Le taux d'insuline} : une élévation chronique de l'insulinémie peut signaler
+	une résistance à l'insuline précédant le diabète clinique.
+	
+	\item \textbf{La pression artérielle diastolique} : l'hypertension est à la fois un facteur
+	de risque et une comorbidité fréquente du diabète, augmentant le risque cardiovasculaire.
+	
+	\item \textbf{L'épaisseur du pli cutané tricipital} : indicateur indirect de la masse grasse
+	corporelle, corrélé à l'obésité et à la résistance à l'insuline.
+	
+	\item \textbf{La fonction pedigree du diabète (Diabetes Pedigree Function)} : score composite
+	reflétant l'hérédité familiale diabétique, intégrant la prévalence du diabète chez les
+	apparentés et leur degré de parenté.
+	
+	\item \textbf{L'âge} : le risque de DT2 augmente avec l'âge, particulièrement après 45 ans.
+	
+	\item \textbf{Le nombre de grossesses} : dans la population Pima, le nombre de grossesses est
+	corrélé à l'âge et constitue un facteur de risque indirect via le diabète gestationnel.
+\end{itemize}
+
+\subsection*{Conséquences et enjeux cliniques}
+
+Non traité ou mal contrôlé, le diabète entraîne des complications graves : néphropathie
+diabétique pouvant évoluer vers l'insuffisance rénale terminale, rétinopathie et cécité,
+neuropathie périphérique, maladies cardiovasculaires et artériopathie des membres inférieurs
+pouvant mener à l'amputation. La détection précoce est donc cruciale : elle permet d'initier
+des interventions sur le mode de vie et des traitements pharmacologiques avant l'apparition
+des complications irréversibles~\citep{wee2024, khanam2021}.
+
+%----------------------------------------------------------------
+\section{Approches traditionnelles de détection du diabète}
+%----------------------------------------------------------------
+
+Historiquement, le diagnostic du diabète repose sur des critères biochimiques standardisés
+établis par des organisations de référence telles que l'OMS et l'ADA. Ces critères incluent
+la mesure de la glycémie à jeun ($\geq$ 126 mg/dL), la glycémie deux heures après une charge
+orale en glucose de 75g ($\geq$ 200 mg/dL), ou le taux d'hémoglobine glyquée HbA1c
+($\geq$ 6,5\%). Ces mesures constituent des seuils fixes, appliqués uniformément à l'ensemble
+de la population.
+
+Si ces méthodes présentent l'avantage d'être standardisées, reproductibles et bien comprises
+cliniquement, elles souffrent de plusieurs limitations importantes dans un contexte de
+prévention et de dépistage de masse~\citep{sisodia2018} :
+
+\begin{enumerate}
+	\item \textbf{Absence d'intégration multi-variables} : les critères traditionnels ne tiennent
+	pas compte simultanément des multiples facteurs de risque. Or, la progression vers le DT2
+	est un phénomène multidimensionnel impliquant des interactions complexes entre variables
+	génétiques, métaboliques et comportementales.
+	
+	\item \textbf{Détection tardive} : les critères actuels diagnostiquent un diabète déclaré,
+	souvent après plusieurs années de dysrégulation glycémique silencieuse (stade prédiabétique).
+	
+	\item \textbf{Coût et accessibilité} : les tests biologiques (HOMA-IR, OGTT) requièrent des
+	prélèvements à jeun et une infrastructure de laboratoire, ce qui limite leur accessibilité
+	dans les systèmes de santé à ressources limitées.
+	
+	\item \textbf{Variabilité inter-individuelle} : deux individus présentant la même glycémie à
+	jeun peuvent avoir des profils de risque très différents selon leurs caractéristiques
+	anthropométriques, héréditaires et comportementales.
+\end{enumerate}
+
+Ces limites ont motivé l'exploration de méthodes analytiques capables d'exploiter l'ensemble
+des données cliniques disponibles pour produire des prédictions personnalisées du risque
+diabétique~\citep{sisodia2018, kavakiotis2017}.
+
+%----------------------------------------------------------------
+\section{Méthodes basées sur l'apprentissage automatique}
+%----------------------------------------------------------------
+
+L'application de l'apprentissage automatique (\textit{machine learning}, ML) à la détection
+du diabète a connu une croissance exponentielle depuis les années 2010. Ces méthodes
+présentent plusieurs avantages structurels : capacité à modéliser des relations non linéaires
+entre variables, aptitude à traiter des jeux de données à forte dimensionnalité, et possibilité
+d'intégrer des caractéristiques hétérogènes dans un cadre unifié de décision~\citep{wee2024}.
+
+\subsection{Régression logistique et méthodes linéaires}
+
+La régression logistique (RL) constitue souvent le modèle de référence (\textit{baseline}) dans
+les études de classification médicale. Pour la prédiction du diabète, la RL modélise la
+probabilité d'appartenance à la classe ``diabétique'' en fonction d'une combinaison linéaire
+des variables d'entrée, transformée par la fonction sigmoïde~\citep{iparraguirre2023}. Bien
+que simple et interprétable, ce modèle suppose une séparabilité linéaire entre les classes,
+hypothèse rarement vérifiée dans les données cliniques complexes. Les performances rapportées
+sur la PIDD se situent généralement entre 72\% et 78\% d'exactitude selon les études.
+
+\subsection{Arbres de décision et méthodes ensemblistes basiques}
+
+Les arbres de décision (Decision Trees, DT) ont été parmi les premiers algorithmes appliqués
+à la détection du diabète sur la PIDD~\citep{sisodia2018}. Leur interprétabilité naturelle
+— chaque décision pouvant être visualisée sous forme d'un arbre binaire — les rend
+particulièrement attractifs pour les applications médicales. Cependant, leur forte sensibilité
+au surapprentissage limite leurs performances en généralisation. \citeauthor{zou2018}
+montrent que dans un arbre de décision entraîné sur la PIDD, le glucose constitue le nœud
+racine, confirmant ainsi la pertinence clinique de ce prédicteur~\citep{zou2018}.
+
+\subsection{Méthodes à noyaux : les SVM}
+
+Les Machines à Vecteurs de Support (SVM) ont été appliquées à la détection du diabète dès
+les travaux pionniers de la fin des années 1990. Elles présentent l'avantage de trouver un
+hyperplan de séparation optimal dans des espaces de grande dimension, avec une bonne
+résistance au surapprentissage grâce à la maximisation de la marge. Sur la PIDD, les SVM
+avec noyau RBF (\textit{Radial Basis Function}) obtiennent généralement des précisions entre
+71\% et 82\% selon les stratégies de prétraitement adoptées~\citep{iparraguirre2023,
+	wee2024}. Leur sensibilité à l'échelle des données et au choix de l'hyperparamètre $C$
+nécessite une normalisation minutieuse et une optimisation des hyperparamètres.
+
+\subsection{Méthodes probabilistes et apprentissage bayésien}
+
+Les classifieurs Naïf de Bayes (\textit{Naïve Bayes}, NB) et ses variantes (Bernoulli NB,
+Gaussian NB) offrent une approche probabiliste basée sur le théorème de Bayes, sous
+l'hypothèse d'indépendance conditionnelle entre les variables. Malgré la relative simplic\-ité
+de cette hypothèse, ces méthodes produisent des résultats compétitifs sur des jeux de données
+de taille modérée~\citep{iparraguirre2023}. \citeauthor{iparraguirre2023} rapportent une
+exactitude de 77,2\% avec le modèle Bernoulli NB couplé à la technique SMOTE pour
+rééquilibrer les classes.
+
+\subsection{Méthodes ensemblistes avancées : Random Forest et XGBoost}
+
+Les méthodes ensemblistes représentent l'état de l'art pour la classification sur données
+tabulaires. \citeauthor{zou2018} démontrent dans une étude comparative pionnière que les
+forêts aléatoires atteignent la meilleure exactitude (ACC = 80,84\%) sur la PIDD lorsque
+l'ensemble des attributs est utilisé, surpassant les réseaux de neurones et les arbres de
+décision isolés~\citep{zou2018}. Ces résultats ont été confirmés et approfondis par de
+nombreux travaux ultérieurs~\citep{wee2024, gundogdu2023, khanam2021}.
+
+XGBoost a progressivement émergé comme l'algorithme le plus compétitif dans ce domaine.
+\citeauthor{gundogdu2023} proposent une architecture combinant Random Forest pour la
+sélection de variables et XGBoost pour la classification, atteignant une AUC de 98,6\% sur
+un jeu de données de 520 patients diabétiques du Bangladesh~\citep{gundogdu2023}. Ce
+résultat illustre l'intérêt de combiner les forces des deux méthodes : la robustesse de la
+Random Forest pour l'identification des variables pertinentes, et la précision prédictive du
+gradient boosting.
+
+%----------------------------------------------------------------
+\section{Études comparatives utilisant SVM, Random Forest et XGBoost}
+%----------------------------------------------------------------
+
+Un corpus croissant de travaux propose des comparaisons directes entre les trois algorithmes
+ciblés dans ce mémoire, offrant une base empirique solide pour orienter le choix du modèle
+en contexte clinique.
+
+\subsection{Comparaisons sur la base PIDD}
+
+\citeauthor{iparraguirre2023} comparent cinq algorithmes — K-NN, Naïf de Bayes, arbres de
+décision, régression logistique et SVM — sur la PIDD avec application de SMOTE pour
+l'équilibrage des classes~\citep{iparraguirre2023}. Leurs résultats montrent que K-NN et
+Bernoulli NB surpassent le SVM (71,7\% d'exactitude) dans ce contexte. Cette relative
+contre-performance du SVM est attribuée à la petite taille du jeu de données et à la
+sensibilité de l'algorithme aux hyperparamètres dans des espaces de faible dimensionnalité.
+
+\citeauthor{zou2018} proposent une comparaison systématique sur la PIDD incluant les
+forêts aléatoires, les arbres de décision et les réseaux de neurones, avec application de
+techniques de réduction de dimensionnalité (PCA et mRMR)~\citep{zou2018}. La Random
+Forest obtient la meilleure exactitude globale (80,84\%), ce résultat étant robuste aux
+différentes configurations de sélection de variables testées. Les auteurs soulignent que le
+glucose est systématiquement identifié comme la variable de plus haute importance, tant par
+les critères d'entropie dans les arbres que par l'importance des variables dans la Random
+Forest.
+
+\subsection{Comparaisons multi-algorithmes incluant XGBoost}
+
+\citeauthor{wee2024} proposent une revue approfondie des méthodes de ML et de deep
+learning appliquées à la détection du diabète sur plusieurs bases de données publiques~\citep{wee2024}. Leur analyse met en évidence la supériorité systématique des méthodes
+ensemblistes (Random Forest, XGBoost) sur les méthodes à modèle unique (régression
+logistique, SVM) en termes d'exactitude, de F1-score et d'AUC-ROC. XGBoost se distingue
+notamment par ses mécanismes intégrés de régularisation et sa gestion native des valeurs
+manquantes, deux propriétés particulièrement avantageuses pour les données médicales
+réelles souvent incomplètes.
+
+\citeauthor{khanam2021} réalisent une comparaison de sept algorithmes de ML pour la
+prédiction du diabète, incluant SVM, Random Forest, régression logistique, K-NN, arbres de
+décision, réseaux de neurones et Naïf de Bayes~\citep{khanam2021}. Sur la PIDD, les résultats
+montrent que la régression logistique et le SVM obtiennent les meilleures performances en
+termes d'exactitude, tandis que la Random Forest excelle sur le rappel (\textit{recall}),
+métrique particulièrement importante en contexte médical pour minimiser les faux négatifs
+(patients diabétiques non détectés).
+
+\subsection{Apport des techniques de prétraitement et d'optimisation}
+
+Plusieurs études soulignent que les performances comparatives dépendent fortement des
+stratégies de prétraitement adoptées. \citeauthor{gundogdu2023} montrent que la sélection
+de variables par Random Forest permet d'améliorer significativement les performances de
+XGBoost en réduisant le bruit introduit par les variables non informatives~\citep{gundogdu2023}.
+\citeauthor{iparraguirre2023} démontrent que l'application de SMOTE améliore systématiquement
+les métriques de classification pour tous les algorithmes testés sur la PIDD, en réduisant
+le déséquilibre entre les classes positives (diabétiques, 35\% du jeu de données) et
+négatives~\citep{iparraguirre2023}.
+
+Le Tableau~\ref{tab:comparaison_etudes} synthétise les principales études comparatives
+identifiées dans la littérature.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Synthèse des principales études comparatives de ML pour la détection du diabète}
+	\label{tab:comparaison_etudes}
+	\small
+	\begin{tabular}{p{2.8cm} p{2.8cm} p{2.5cm} p{3cm} p{2cm}}
+		\hline
+		\textbf{Étude} & \textbf{Dataset} & \textbf{Algorithmes} & \textbf{Meilleur résultat} & \textbf{Métrique} \\
+		\hline
+		Zou et al. \cite{zou2018} & PIDD + Luzhou & RF, DT, NN & RF: 80,84\% & ACC \\
+		\hline
+		Iparraguirre et al. \cite{iparraguirre2023} & PIDD (SMOTE) & K-NN, NB, DT, LR, SVM & K-NN: 79,6\% & ACC \\
+		\hline
+		Wee et al. \cite{wee2024} & Multiple & RF, XGB, SVM, DL & XGBoost & AUC-ROC \\
+		\hline
+		Khanam \& Foo \cite{khanam2021} & PIDD & 7 algorithmes & LR/SVM & ACC / Recall \\
+		\hline
+		Gündoğdu \cite{gundogdu2023} & Sylhet, BD & RF + XGB & RF-XGB: 98,6\% & AUC \\
+		\hline
+		Sisodia \& Sisodia \cite{sisodia2018} & PIDD & NB, DT, SVM & NB: 76,3\% & ACC \\
+		\hline
+	\end{tabular}
+\end{table}
+
+%----------------------------------------------------------------
+\section{Analyse critique des travaux existants}
+%----------------------------------------------------------------
+
+L'examen de la littérature permet d'identifier plusieurs constats et limites récurrents qui
+méritent une discussion approfondie.
+
+\subsection{Hétérogénéité des protocoles expérimentaux}
+
+La comparabilité des résultats entre études est sérieusement compromise par l'hétérogénéité
+des protocoles. Les différences portent sur la stratégie de partitionnement des données
+(hold-out simple vs. validation croisée k-fold), le traitement des valeurs manquantes et des
+zéros biologiquement impossibles dans la PIDD (certaines études les suppriment, d'autres les
+imputent), l'usage ou non de techniques de rééchantillonnage (SMOTE, ADASYN), ainsi que le
+choix des métriques d'évaluation. Ces disparités rendent les comparaisons directes entre
+études délicates et expliquent en partie la grande variabilité des performances rapportées
+pour un même algorithme~\citep{wee2024}.
+
+\subsection{Déséquilibre des classes et biais des métriques}
+
+La PIDD présente un déséquilibre significatif entre les classes : environ 35\% de cas
+positifs contre 65\% de cas négatifs. Cette asymétrie induit un biais dans l'interprétation
+de l'exactitude simple (\textit{accuracy}), qui peut être artificiellement élevée même pour
+un classifieur majoritaire. Plusieurs études publiées antérieurement ne reportent que
+l'exactitude, occultant les performances sur la classe minoritaire (diabétiques) qui est
+pourtant la plus cliniquement pertinente~\citep{khanam2021, iparraguirre2023}. Une analyse
+rigoureuse doit systématiquement inclure le rappel (sensibilité), la précision, le F1-score
+et l'AUC-ROC pour chaque classe.
+
+\subsection{Généralisation limitée}
+
+La majorité des études comparatives se concentrent sur la PIDD, une base de données de
+768 instances issues d'une population très spécifique (femmes Pima de plus de 21 ans).
+La généralisation de ces résultats à d'autres populations reste une question ouverte. Les
+caractéristiques démographiques, génétiques et métaboliques de la population Pima sont
+atypiques à l'échelle mondiale, ce qui limite l'extrapolation directe des modèles
+développés~\citep{zou2018, wee2024}.
+
+\subsection{Explicabilité insuffisante}
+
+Peu d'études analysent l'importance des variables de manière rigoureuse ou n'explorent les
+mécanismes de décision des modèles au-delà des simples scores d'importance. L'émergence
+d'outils d'explicabilité comme SHAP (\textit{SHapley Additive exPlanations}) offre des
+perspectives prometteuses pour rendre les modèles ensemblistes interprétables par les
+cliniciens, mais leur utilisation reste marginale dans la littérature sur la PIDD~\citep{wee2024}.
+
+\subsection{Optimisation du seuil de décision}
+
+La quasi-totalité des études utilise le seuil de classification par défaut de 0,5, sans
+l'optimiser en fonction du contexte clinique. En détection du diabète, un faux négatif
+(patient diabétique non détecté) est généralement plus coûteux qu'un faux positif, ce qui
+justifie l'utilisation de seuils inférieurs à 0,5 pour maximiser la sensibilité. Cette
+dimension de l'évaluation est systématiquement négligée dans les études
+existantes~\citep{khanam2021}.
+
+%----------------------------------------------------------------
+\section{Positionnement et apport du présent travail}
+%----------------------------------------------------------------
+
+À la lumière de cette revue de littérature, le présent travail se positionne dans le
+prolongement des études comparatives existantes tout en apportant plusieurs contributions
+spécifiques.
+
+\textbf{Premièrement}, contrairement aux études qui comparent un grand nombre d'algorithmes
+superficiellement, ce mémoire se concentre sur trois algorithmes majeurs — SVM, Random
+Forest et XGBoost — avec une analyse approfondie de leurs mécanismes théoriques et de leur
+comportement face aux spécificités de la PIDD. Ce choix est motivé par la complémentarité
+des approches : les SVM représentent les méthodes à noyau, la Random Forest représente le
+bagging ensembliste, et XGBoost représente le boosting par gradient.
+
+\textbf{Deuxièmement}, l'évaluation adoptée dans ce travail va au-delà de la simple
+exactitude pour inclure un ensemble complet de métriques adapté au contexte médical :
+précision, rappel, F1-score, AUC-ROC et matrice de confusion par classe. Une attention
+particulière est portée à la sensibilité (rappel de la classe positive), directement liée
+au taux de détection des patients diabétiques.
+
+\textbf{Troisièmement}, ce mémoire intègre une analyse de l'importance des variables pour
+chaque modèle, permettant d'identifier les prédicteurs les plus déterminants dans la PIDD
+et de confronter les conclusions algorithmiques aux connaissances médicales établies.
+
+\textbf{Quatrièmement}, la gestion du déséquilibre des classes est traitée de manière
+explicite, en comparant différentes stratégies : pondération des classes, techniques de
+rééchantillonnage, et paramètres natifs (comme \texttt{scale\_pos\_weight} dans XGBoost)
+pour évaluer leur impact sur les performances finales.
+
+En somme, ce travail vise à produire une évaluation comparative rigoureuse, reproductible
+et cliniquement orientée, dont les conclusions peuvent guider des praticiens ou des équipes
+de recherche souhaitant déployer un modèle de détection du diabète sur la PIDD ou des
+jeux de données cliniques similaires.
+

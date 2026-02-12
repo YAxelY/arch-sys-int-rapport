@@ -6,6 +6,7 @@
 \RequirePackage[utf8]{inputenc} % Caractères spéciaux
 \RequirePackage[section]{placeins} % Pour placement de section
 \RequirePackage[T1]{fontenc} % Quelques lettres qui sont pas inclus dans UTF-8
+\RequirePackage{lmodern}
 \RequirePackage{mathtools} % Paquet pour des équations et symboles mathématiques
 \RequirePackage{siunitx} % Pour écrire avec la notation scientifique (Ex.: \num{2e+9})
 \RequirePackage{float} % Pour placement d'images
@@ -47,7 +48,7 @@
     \renewcommand{\headrulewidth}{1pt} %0pt for no rule, 2pt thicker etc...
     \renewcommand{\footrulewidth}{1pt}
     \fancyfoot[L]{Projet de ..} % BOTTOM LEFT
-    \fancyfoot[R]{2024-2025} % BOTTOM RIGHT
+    \fancyfoot[R]{2025-2026} % BOTTOM RIGHT
     \fancyhead[L]{\nouppercase{\leftmark}} % TOP LEFT
     \fancyhead[R]{} % TOP RIGHT
     \pagestyle{fancy}
@@ -70,7 +71,8 @@
     \centering %Centraliser le contenu
     %\hspace{-2cm}
     \includegraphics[width=0.3\textwidth]{logos/logo_dschang.png}\hfill
-	\includegraphics[width=0.3\textwidth]{logos/logo_dschang.png}\par\vspace{1cm} %Insertion du logo
+	\includegraphics[width=0.3\textwidth]{logos/logo_dschang.png}\par
+	\vspace{1cm} %Insertion du logo
 	{\scshape\LARGE Université de Dschang - Faculté des Sciences \par} %Nom de l'université
 	\vspace{1.5cm}%Espace de 1,5cm
 	{\scshape\Large \UE \par \sujet \par} %sous-titre

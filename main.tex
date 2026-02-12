@@ -2,11 +2,13 @@
 \usepackage{lipsum}
 \usepackage{minted}
 \definecolor{bg}{rgb}{0.95,0.95,0.95} % Adjust the RGB values as needed
-
+\usepackage{lmodern}
 \usepackage{titlesec} % For customizing chapter and section titles
 \usepackage{tocloft} % For customizing the table of contents
 \usepackage{hyperref} % For adding hyperlinks
 \usepackage{natbib}
+
+
 
 
 \title{E - learning} %Titre du fichier
@@ -15,13 +17,14 @@
 
 %----------- Informations du rapport ---------
 
-\titre{E - learning} %Titre du fichier 
+\titre{SVM, Random Forests, XGBoost} %Titre du fichier 
 %\UE{UE PRO} %Nom de la UE
-\sujet{Projet de Fin d'Année} %Nom du sujet
+\sujet{Projet d'Architecture des Systèmes Intelligents (IAR521)} %Nom du sujet
 
 \enseignant{Prénom \textsc{Nom}} %Nom de l'enseignant
 
 \eleves{Prénom \textsc{Nom} \\
+		Prénom \textsc{Nom} \\ 
 		Prénom \textsc{Nom} \\ 
 		Prénom \textsc{Nom} } %Nom des élèves
 
@@ -39,23 +42,25 @@
 \addcontentsline{toc}{chapter}{Remerciements}
 %\include{Chapters/remerciement} % modifier dans le fichier 
 
-\chapter*{Résumé}
-\addcontentsline{toc}{chapter}{Résumé}
-%ecrire ici abstract
+
+\newpage
+\tabledematieres %Créer la table de matières
 
 \chapter*{Liste des Abréviations}
 %\addcontentsline{toc}{chapter}{Liste des Abréviations}
 %ecrire ici
-
-
-\newpage
-\tabledematieres %Créer la table de matières
 
 \newpage
 \listoffigures
 
 \newpage
 \listoftables
+
+
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+%ecrire ici abstract
+
 
 % intro
 
@@ -67,9 +72,9 @@
 \include{Chapters/chapter1}
 \include{Chapters/chapter2}
 \include{Chapters/chapter-xgboost}
-\include{Chapters/chapter3}
 \include{Chapters/chapter4}
 \include{Chapters/chapter5}
+\include{Chapters/chapter6}
 
 %------------ Liste of listings----------------
 %\renewcommand\listoflistingscaption{Liste des codes source}
@@ -80,10 +85,9 @@
 % conclusion
 
 \newpage
-%\chapter*{Références}
-%\addcontentsline{toc}{chapter}{Références}
-% i didn't use the citation system using .bib file , you can add it if you want
-\bibliographystyle{apalike} % We choose the "plain" reference style
+\chapter*{Références}
+\addcontentsline{toc}{chapter}{Références}
+\bibliographystyle{apalike}
 \bibliography{refs}
 
 \newpage
