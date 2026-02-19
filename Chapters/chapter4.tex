@@ -106,8 +106,10 @@ prévention et de dépistage de masse~\citep{sisodia2018} :
 	est un phénomène multidimensionnel impliquant des interactions complexes entre variables
 	génétiques, métaboliques et comportementales.
 	
-	\item \textbf{Détection tardive} : les critères actuels diagnostiquent un diabète déclaré,
-	souvent après plusieurs années de dysrégulation glycémique silencieuse (stade prédiabétique).
+	\item \textbf{Détection tardive} : Ils diagnostiquent un diabète déclaré, souvent après plusieurs 
+	années de dysrégulation glycémique silencieuse (stade prédiabétique). 
+	L'étude de \cite{lv2023detection} souligne d'ailleurs que certaines personnes ayant une glycémie 
+	à jeun normale peuvent en réalité être diabétiques, passant ainsi inaperçues lors des examens de routine.
 	
 	\item \textbf{Coût et accessibilité} : les tests biologiques (HOMA-IR, OGTT) requièrent des
 	prélèvements à jeun et une infrastructure de laboratoire, ce qui limite leur accessibilité
@@ -123,72 +125,21 @@ des données cliniques disponibles pour produire des prédictions personnalisée
 diabétique~\citep{sisodia2018, kavakiotis2017}.
 
 %----------------------------------------------------------------
-\section{Méthodes basées sur l'apprentissage automatique}
+\section{Approches basées sur l'apprentissage automatique}
 %----------------------------------------------------------------
 
-L'application de l'apprentissage automatique (\textit{machine learning}, ML) à la détection
-du diabète a connu une croissance exponentielle depuis les années 2010. Ces méthodes
-présentent plusieurs avantages structurels : capacité à modéliser des relations non linéaires
-entre variables, aptitude à traiter des jeux de données à forte dimensionnalité, et possibilité
-d'intégrer des caractéristiques hétérogènes dans un cadre unifié de décision~\citep{wee2024}.
+L'application de l'apprentissage automatique à la détection du diabète a fait l'objet de nombreuses recherches, utilisant une variété d'algorithmes et de jeux de données.
 
-\subsection{Régression logistique et méthodes linéaires}
+Dans une étude visant à évaluer l'efficacité de différents algorithmes pour la détection précoce du diabète de type 2, \cite{gowthami2024exploring} ont utilisé un ensemble de données de 520 patients du Sylhet Diabetes Hospital au Bangladesh, comprenant 17 attributs. Leur méthodologie a mis l'accent sur la sélection de caractéristiques (feature selection) pour réduire la dimensionnalité et améliorer la précision. En comparant des modèles tels que la régression logistique, les K-plus proches voisins (KNN), les arbres de décision, les forêts aléatoires et les machines à vecteurs de support, ils ont démontré que l'algorithme Random Forest atteignait une précision impressionnante de 98\%, soulignant le potentiel de ces méthodes pour un dépistage précis et non invasif.
 
-La régression logistique (RL) constitue souvent le modèle de référence (\textit{baseline}) dans
-les études de classification médicale. Pour la prédiction du diabète, la RL modélise la
-probabilité d'appartenance à la classe ``diabétique'' en fonction d'une combinaison linéaire
-des variables d'entrée, transformée par la fonction sigmoïde~\citep{iparraguirre2023}. Bien
-que simple et interprétable, ce modèle suppose une séparabilité linéaire entre les classes,
-hypothèse rarement vérifiée dans les données cliniques complexes. Les performances rapportées
-sur la PIDD se situent généralement entre 72\% et 78\% d'exactitude selon les études.
+De leur côté, \cite{iparraguirre2023application} se sont concentrés sur la détection et la classification du diabète de type 2 en utilisant le jeu de données PIMA Indian. Ils ont investigué cinq modèles de ML : K-NN, Bernoulli Naive Bayes (BNB), arbre de décision (DT), régression logistique (LR) et SVM. Face à la petite taille du jeu de données, ils ont appliqué la technique de suréchantillonnage SMOTE pour équilibrer les classes. Leurs résultats ont montré que les modèles K-NN et BNB surpassaient les autres, avec des précisions respectives de 79,6\% et 77,2\%, concluant que l'utilisation de modèles ML pour la détection précoce du diabète est très prometteuse.
 
-\subsection{Arbres de décision et méthodes ensemblistes basiques}
+S'inscrivant dans une démarche similaire, \cite{saihood2023practical} ont proposé un cadre pratique en trois étapes pour le diagnostic du diabète, incluant un prétraitement poussé des données (gestion des valeurs manquantes, des outliers, équilibrage des classes, sélection de caractéristiques), un réglage fin des hyperparamètres par recherche par grille (grid search), et l'utilisation de méthodes d'ensemble (bagging, boosting, stacking). En testant leur approche sur le jeu de données PIDD, ils ont constaté la supériorité des méthodes d'ensemble. Le stacking, combinant Random Forest et SVM, a obtenu la meilleure précision (97,50\%), suivi de près par Random Forest (97,20\%) et XGBoost (97,10\%). Ces résultats confirment que l'attention portée au prétraitement et l'utilisation d'ensembles de modèles sont cruciales pour une performance élevée.
 
-Les arbres de décision (Decision Trees, DT) ont été parmi les premiers algorithmes appliqués
-à la détection du diabète sur la PIDD~\citep{sisodia2018}. Leur interprétabilité naturelle
-— chaque décision pouvant être visualisée sous forme d'un arbre binaire — les rend
-particulièrement attractifs pour les applications médicales. Cependant, leur forte sensibilité
-au surapprentissage limite leurs performances en généralisation. \citeauthor{zou2018}
-montrent que dans un arbre de décision entraîné sur la PIDD, le glucose constitue le nœud
-racine, confirmant ainsi la pertinence clinique de ce prédicteur~\citep{zou2018}.
+\cite{lv2023detection} ont abordé la problématique sous un angle original : détecter les patients diabétiques parmi les personnes ayant une glycémie à jeun normale, qui passent donc inaperçues lors des examens standards. En utilisant les données d'examens physiques de plus de 60 000 individus issus de trois cohortes chinoises, ils ont construit un modèle de prédiction appelé DRING (Diabetes Risk of Individuals with Normal fasting Glucose). Leur modèle, basé sur la régression logistique, a montré d'excellentes performances avec seulement 13 caractéristiques cliniques courantes (dont l'âge, l'IMC, la numération lymphocytaire). Ils ont également développé un cadre pour identifier les facteurs de risque personnalisés pour un individu donné, démontrant la faisabilité d'une approche de dépistage plus fine et personnalisée.
 
-\subsection{Méthodes à noyaux : les SVM}
+Enfin, une revue de la littérature exhaustive menée par \cite{juwono2024machine} a analysé plus de 50 modèles de ML et d'apprentissage profond pour la détection du diabète. Leur analyse souligne plusieurs points critiques : (1) la majorité des études utilisent des ensembles de données invasifs comme le PIDD, alors que le développement d'outils basés sur des mesures anthropométriques non invasives est une demande clinique forte ; (2) le suréchantillonnage, bien que souvent utilisé, n'améliore pas systématiquement les performances s'il est appliqué sur des données bruitées ; (3) la sélection de caractéristiques, si elle est bénéfique pour les modèles de ML, peut pénaliser les modèles de deep learning sur de petits jeux de données en réduisant encore le nombre d'échantillons disponibles. Leurs travaux mettent en lumière l'importance cruciale de la qualité et de la nature des données, ainsi que le compromis entre complexité du modèle et performance réelle.
 
-Les Machines à Vecteurs de Support (SVM) ont été appliquées à la détection du diabète dès
-les travaux pionniers de la fin des années 1990. Elles présentent l'avantage de trouver un
-hyperplan de séparation optimal dans des espaces de grande dimension, avec une bonne
-résistance au surapprentissage grâce à la maximisation de la marge. Sur la PIDD, les SVM
-avec noyau RBF (\textit{Radial Basis Function}) obtiennent généralement des précisions entre
-71\% et 82\% selon les stratégies de prétraitement adoptées~\citep{iparraguirre2023,
-	wee2024}. Leur sensibilité à l'échelle des données et au choix de l'hyperparamètre $C$
-nécessite une normalisation minutieuse et une optimisation des hyperparamètres.
-
-\subsection{Méthodes probabilistes et apprentissage bayésien}
-
-Les classifieurs Naïf de Bayes (\textit{Naïve Bayes}, NB) et ses variantes (Bernoulli NB,
-Gaussian NB) offrent une approche probabiliste basée sur le théorème de Bayes, sous
-l'hypothèse d'indépendance conditionnelle entre les variables. Malgré la relative simplic\-ité
-de cette hypothèse, ces méthodes produisent des résultats compétitifs sur des jeux de données
-de taille modérée~\citep{iparraguirre2023}. \citeauthor{iparraguirre2023} rapportent une
-exactitude de 77,2\% avec le modèle Bernoulli NB couplé à la technique SMOTE pour
-rééquilibrer les classes.
-
-\subsection{Méthodes ensemblistes avancées : Random Forest et XGBoost}
-
-Les méthodes ensemblistes représentent l'état de l'art pour la classification sur données
-tabulaires. \citeauthor{zou2018} démontrent dans une étude comparative pionnière que les
-forêts aléatoires atteignent la meilleure exactitude (ACC = 80,84\%) sur la PIDD lorsque
-l'ensemble des attributs est utilisé, surpassant les réseaux de neurones et les arbres de
-décision isolés~\citep{zou2018}. Ces résultats ont été confirmés et approfondis par de
-nombreux travaux ultérieurs~\citep{wee2024, gundogdu2023, khanam2021}.
-
-XGBoost a progressivement émergé comme l'algorithme le plus compétitif dans ce domaine.
-\citeauthor{gundogdu2023} proposent une architecture combinant Random Forest pour la
-sélection de variables et XGBoost pour la classification, atteignant une AUC de 98,6\% sur
-un jeu de données de 520 patients diabétiques du Bangladesh~\citep{gundogdu2023}. Ce
-résultat illustre l'intérêt de combiner les forces des deux méthodes : la robustesse de la
-Random Forest pour l'identification des variables pertinentes, et la précision prédictive du
-gradient boosting.
 
 %----------------------------------------------------------------
 \section{Études comparatives utilisant SVM, Random Forest et XGBoost}
