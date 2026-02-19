@@ -11,6 +11,11 @@
   {0pt}
   {\vspace{4pt}\hrule height 2pt\vspace{12pt}}
   [\vspace{8pt}\hrule height 2pt]
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering}
+  {\fontsize{64}{72}\selectfont\thechapter}
+  {0pt}
+  {\huge\centering}
 \usepackage{tocloft} % For customizing the table of contents
 \usepackage{hyperref} % For adding hyperlinks
 \usepackage{natbib}
@@ -60,7 +65,7 @@
 \tabledematieres %Créer la table de matières
 
 \newpage
-\addcontentsline{toc}{chapter}{Table des figures}
+\addcontentsline{toc}{chapter}{Liste des figures}
 \listoffigures
 
 \newpage
