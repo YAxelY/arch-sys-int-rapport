@@ -1,0 +1,52 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Le diabète sucré constitue l'un des enjeux de santé publique les plus critiques du
+21\textsuperscript{e} siècle, touchant plus de 500 millions de personnes à travers le
+monde. Sa détection précoce est essentielle pour prévenir des complications graves et
+réduire la charge des systèmes de santé. Dans ce contexte, les méthodes d'apprentissage
+automatique supervisé offrent des perspectives prometteuses pour l'exploitation des données
+cliniques à des fins diagnostiques.
+
+Ce travail présente une évaluation comparative rigoureuse de trois algorithmes de machine
+learning — les \textbf{Machines à Vecteurs de Support (SVM)}, les \textbf{Forêts Aléatoires
+(Random Forests)} et \textbf{XGBoost} — appliqués à la classification du risque diabétique
+sur la base de données \textit{Pima Indians Diabetes Database} (PIDD). Ce jeu de données,
+composé de 768 patientes issues de la communauté Pima présentant une prévalence élevée de
+diabète de type 2, regroupe huit variables cliniques clés telles que la glycémie plasmatique,
+l'indice de masse corporelle, l'insulinémie, la pression artérielle et la fonction de
+prédisposition héréditaire.
+
+Dans un premier temps, les fondements théoriques de chacun des trois algoritmes sont
+présentés : le formalisme de la maximisation de la marge et l'astuce du noyau pour les SVM,
+les mécanismes de bagging et de sélection aléatoire des caractéristiques pour les forêts
+aléatoires, ainsi que le gradient boosting régularisé et l'approximation de Taylor de
+second ordre propres à XGBoost. Un état de l'art de l'application de ces méthodes à la
+détection du diabète est ensuite conduit, soulignant les limites des approches existantes et
+motivant les choix méthodologiques retenus dans ce travail.
+
+Sur le plan expérimental, les trois modèles sont entraînés et évalués selon un protocole
+strict incluant une validation croisée, une gestion explicite du déséquilibre de classes
+(environ 65\,\% de cas négatifs contre 35\,\% de cas positifs), ainsi qu'une optimisation
+des hyperparamètres. L'évaluation repose sur un ensemble complet de métriques cliniquement
+pertinentes : précision (\textit{accuracy}), rappel (\textit{recall}), F1-score,
+aire sous la courbe ROC (AUC-ROC) et matrice de confusion.
+
+Les résultats expérimentaux révèlent que \textbf{XGBoost} obtient les meilleures
+performances globales, avec notamment les scores AUC-ROC et F1 les plus élevés,
+confirmant la supériorité des méthodes de boosting par gradient pour ce type de tâche
+clinique. Les \textbf{Forêts Aléatoires} présentent des performances comparables, avec
+l'avantage d'une plus grande robustesse au surapprentissage et d'une intégration naturelle
+de l'estimation d'erreur \textit{out-of-bag}. Les \textbf{SVM} avec noyau RBF offrent
+de bonnes performances sur les métriques de précision mais se montrent plus sensibles aux
+réglages d'hyperparamètres et au déséquilibre des classes. La glycémie plasmatique ressort
+systématiquement comme le prédicteur le plus informatif dans les trois modèles, en accord
+avec les connaissances médicales établies.
+
+Ces travaux contribuent à fournir une base comparative reproductible et cliniquement orientée
+pour le choix d'un algorithme de détection du diabète, et ouvrent des perspectives vers des
+approches hybrides et des analyses d'explicabilité plus poussées à l'aide d'outils tels que SHAP.
+
+\medskip
+\noindent\textbf{Mots-clés :} Apprentissage automatique, Diabète, PIDD, SVM, Forêts
+Aléatoires, XGBoost, Classification, AUC-ROC, Données médicales.

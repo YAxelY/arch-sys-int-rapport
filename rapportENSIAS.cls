@@ -48,8 +48,8 @@
     \fancyfoot[C]{\thepage} %Page Number
     \renewcommand{\headrulewidth}{1pt} %0pt for no rule, 2pt thicker etc...
     \renewcommand{\footrulewidth}{1pt}
-    \fancyfoot[L]{Etude sur SVM ,Ramdom Forest,XGBoost} % BOTTOM LEFT
-    \fancyfoot[R]{2024-2025} % BOTTOM RIGHT
+    \fancyfoot[L]{SVM, Random Forest, XGBoost} % BOTTOM LEFT
+    \fancyfoot[R]{2025-2026} % BOTTOM RIGHT
     \fancyhead[L]{\nouppercase{\leftmark}} % TOP LEFT
     \fancyhead[R]{} % TOP RIGHT
     \pagestyle{fancy}
@@ -98,7 +98,7 @@
         ~
         \par
         \vfill
-        {\large Année Universitaire 2024-2025\par}
+        {\large Année Universitaire 2025-2026\par}
 \end{titlepage}
 }
 
