@@ -7,4 +7,45 @@
 \addcontentsline{toc}{chapter}{Conclusion Générale}
 
 \newpage
-Le contenu .......
+
+Ce mémoire avait pour ambition d'évaluer, de manière rigoureuse et cliniquement orientée, trois algorithmes fondamentaux de l'apprentissage automatique supervisé — les Machines à Vecteurs de Support (SVM), les Forêts Aléatoires (Random Forest) et le Gradient Boosting par Extrême Régularisation (XGBoost) — dans le contexte précis de la détection précoce du diabète de type 2 sur la base de données Pima Indians Diabetes Database.
+
+% ---- Synthèse des contributions ----
+\section*{Synthèse des contributions}
+
+La \textbf{Partie I} a fourni les fondements théoriques nécessaires à une compréhension profonde des algorithmes employés. Pour les SVM, nous avons développé le formalisme mathématique de l'hyperplan à marge maximale, du problème dual de Lagrange, du \textit{kernel trick} et des marges souples, permettant de comprendre pourquoi cet algorithme excelle dans les espaces de grande dimension mais peut montrer des limites sur des données tabulaires de taille modeste. Pour les Forêts Aléatoires, nous avons analysé le mécanisme de construction des arbres CART, l'importance du tirage bootstrap et de la sélection aléatoire des caractéristiques comme sources de décorrélation des estimateurs. Pour XGBoost, nous avons expliqué comment l'approximation du second ordre de la fonction objectif, combinée à la régularisation structurelle des arbres, permet un apprentissage extrêmement efficace et régularisé.
+
+L'état de l'art (chapitre 4) a mis en lumière l'hétérogénéité des protocoles publiés, le biais induit par une évaluation limitée à la seule exactitude, et les lacunes récurrentes en matière d'explicabilité et de généralisation externe.
+
+La \textbf{Partie II} a présenté un pipeline expérimental complet et performant, dont les principales contributions sont :
+
+\begin{enumerate}
+    \item \textbf{Un prétraitement avancé} combinant imputation par médiane conditionnelle à la classe, winsorisation aux percentiles extrêmes et transformation de Yeo-Johnson, traitement des spécificités des données médicales de manière chirurgicale.
+    
+    \item \textbf{Une ingénierie de caractéristiques médicalement informée} : 8 nouvelles variables ont été construites à partir des 8 attributs originaux, dont le \texttt{Risk\_Score} ($r = +0.535$ avec \texttt{Outcome}) et l'interaction \texttt{Glucose\_BMI} ($r = +0.526$), portant à 16 le nombre final de caractéristiques.
+    
+    \item \textbf{Un traitement rigoureux du déséquilibre des classes} par Borderline-SMOTE, équilibrant les classes à 400 instances chacune dans le jeu d'entraînement, combiné à l'optimisation des seuils de décision individuellement pour chaque modèle.
+    
+    \item \textbf{Une optimisation bayésienne intensive} des hyperparamètres par Optuna (jusqu'à 200 essais pour XGBoost), conduisant à des configurations optimales sans exploration exhaustive de l'espace des paramètres.
+\end{enumerate}
+
+% ---- Bilan des résultats ----
+\section*{Bilan des résultats}
+
+Les résultats obtenus démontrent la supériorité des méthodes ensemblistes sur le SVM dans ce contexte applicatif. \textbf{XGBoost} et \textbf{Random Forest} atteignent tous deux une exactitude de 89,0\% et un F1-Score de 0.844, avec des AUC-ROC de \textbf{0.9496} et \textbf{0.9453} respectivement — des performances qui surpassent les meilleures valeurs publiées dans la littérature comparative sur la PIDD. Le gain par rapport à une configuration basique est substantiel : +13,6 points d'exactitude, +20,9 points de F1-Score et +12,4 points d'AUC-ROC.
+
+Le SVM, malgré une optimisation soignée, reste limité à une AUC-ROC de 0.859 et un F1-Score de 0.700, illustrant ses difficultés structurelles face à des données tabulaires présentant de fortes interactions entre variables et un déséquilibre modéré des classes.
+
+Les architectures ensemblistes avancées (Voting, Stacking) n'ont pas amélioré les performances des meilleurs modèles individuels en raison de la forte corrélation entre prédicteurs.
+
+% ---- Limites et perspectives ----
+\section*{Limites et perspectives}
+
+Ce travail comporte plusieurs limites qui motivent des directions de recherche futures. La validité externe des modèles reste à démontrer sur des populations autres que les femmes Pima. L'imputation massive de l'attribut \texttt{Insulin} (374 valeurs sur 768) introduit un biais potentiel. L'absence d'explicabilité locale (par exemple via SHAP) limite l'utilité clinique immédiate des modèles appris.
+
+Les perspectives les plus prometteuses sont l'intégration d'outils d'explicabilité SHAP pour un déploiement en aide à la décision clinique, la validation sur des cohortes indépendantes, l'exploration d'architectures de deep learning tabulaire (TabNet, Transformers), et à plus long terme, le développement de systèmes de détection non invasifs basés sur des données anthropométriques et comportementales.
+
+% ---- Mot final ----
+\section*{Mot final}
+
+Ce travail illustre comment une combinaison réfléchie de techniques de prétraitement, d'ingénierie des données et d'optimisation algorithmique peut transformer des performances ordinaires en résultats compétitifs sur un jeu de données de référence. Au-delà des chiffres, il souligne que la qualité des données et la rigueur méthodologique sont des déterminants aussi importants que le choix de l'algorithme lui-même — une leçon fondamentale pour tout praticien de l'apprentissage automatique appliqué aux sciences de la vie.
