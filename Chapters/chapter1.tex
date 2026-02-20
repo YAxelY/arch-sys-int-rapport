@@ -336,7 +336,7 @@ Pour les SVM linéaires, qui reposent sur la recherche d'un hyperplan maximisant
 
 Ce problème est d'autant plus critique que les données réelles -- qu'il s'agisse de pixels d'images, de mots dans un texte ou de mesures biologiques -- présentent souvent des structures non linéaires. Identifier cette limitation est donc essentiel pour comprendre pourquoi les SVM linéaires échouent dans ces cas et pourquoi une approche plus avancée, comme les SVM non linéaires, devient nécessaire.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 % Remplacer par le chemin de votre image
 \includegraphics[width=0.7\textwidth]{Chapters/images/donnees_non_lineaires.png}
@@ -366,7 +366,7 @@ Pour contourner le problème, l'idée est donc la suivante : il est impossible d
 
 Je sens que j'en ai peut-être perdu quelques-uns en cours de route. Considérons l'exemple suivant pour mieux comprendre. On souhaite construire un SVM qui, à partir de la taille d'un individu, détermine si cet individu est un jeune adolescent (entre 12 et 16 ans, carrés bleus) ou non (ronds rouges).
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.7\textwidth]{Chapters/images/donnees_droite.png}
 \caption{Illustration : données sur une droite}
@@ -379,7 +379,7 @@ On essaie donc de trouver un nouvel espace, généralement de dimension supérie
 
 On observe que les données deviennent alors linéairement séparables, ce qui permet à notre SVM de fonctionner correctement ! Plus formellement, l'idée de cette redescription
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.7\textwidth]{Chapters/images/projection_r2.png}
 \caption{Données d'entraînement après projection dans l'espace $\mathbb{R}^2$}
@@ -521,6 +521,133 @@ Les plateformes de streaming musical ou vidéo utilisent le noyau rationnel quad
 \vspace{1em}
 
 Chacun de ces noyaux possède ses avantages et ses inconvénients, comme décrits dans le document. C'est donc à l'utilisateur de choisir le noyau, et les paramètres de ce noyau, qui correspond le mieux à son problème. Et comment choisir son noyau, me demanderez-vous ? Eh bien\ldots{} Je n'ai pas de méthode à vous donner, ça dépend énormément de votre jeu de données.
+
+\section{SVM Multiclasses}
+
+\subsection{Presentations}
+
+Jusqu'à présent, nous avons considéré des SVM capables de classer les données en deux catégories uniquement. Cependant, de nombreux problèmes réels nécessitent la distinction entre plusieurs classes. Prenons l'exemple d'un système devant identifier différents types d'insectes (abeilles, guêpes et frelons) - connaissance utile bien que non analgésique~!
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Chapters/images/figure51.png}
+    \caption{L'étoile noire représente-t-elle une abeille (carré bleu), une guêpe (triangle vert) ou un frelon (rond rouge)~?}
+    \label{fig:insectes}
+\end{figure}
+
+Un hyperplan ne pouvant séparer l'espace qu'en deux régions, différentes stratégies ont été développées pour étendre les SVM aux problèmes multiclasses. Nous détaillerons ici les deux approches principales.
+
+\subsection{Approche One-vs-One (Un contre Un)}
+
+Dans cette méthode, nous construisons un classifieur binaire pour chaque paire de classes. Pour $K$ classes, cela nécessite $\frac{K(K-1)}{2}$ classifieurs.
+
+La décision finale s'effectue par vote majoritaire. Pour une observation $\mathbf{x}$, chaque classifieur $f_{ij}$ entre les classes $i$ et $j$ vote pour une classe. La classe finale est celle ayant reçu le plus de votes~:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{Chapters/images/figure52.png}
+    \caption{Les trois voteurs (SVM) de mon problème. A gauche, le voteur frelon-guêpe, au centre le voteur guêpe-abeille, à droite le voteur abeille-frelon}
+    \label{fig:voteurs}
+\end{figure}
+
+\begin{equation}
+    D_k(\mathbf{x}) = \sum_{\substack{j=1 \\ j \neq k}}^{K} \text{sign}(f_{k,j}(\mathbf{x}))
+    \label{eq:Dk}
+\end{equation}
+
+\begin{equation}
+    \hat{y} = \arg\max_k D_k(\mathbf{x})
+    \label{eq:yhat}
+\end{equation}
+
+où $f_{k,j}(\mathbf{x}) = -f_{j,k}(\mathbf{x})$. En cas d'égalité, on utilise la somme des scores~:
+
+\begin{equation}
+    \hat{y} = \arg\max_k \sum_{\substack{j=1 \\ j \neq k}}^{K} f_{k,j}(\mathbf{x})
+    \label{eq:yhat_score}
+\end{equation}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{Chapters/images/figure53.png}
+    \caption{Résultat du vote~: l'étoile est classée comme frelon}
+    \label{fig:vote}
+\end{figure}
+
+\textbf{Avantages~:}
+\begin{itemize}
+    \item Chaque classifieur est entraîné sur un sous-ensemble réduit des données
+    \item Moins sensible au déséquilibre des classes
+\end{itemize}
+
+\textbf{Inconvénients~:}
+\begin{itemize}
+    \item Complexité quadratique en $O(K^2)$
+    \item 45 classifieurs pour 10 classes, 190 pour 20 classes
+\end{itemize}
+
+\subsection{Approche One-vs-All (Un contre Tous)}
+
+Cette méthode construit $K$ classifieurs, chacun distinguant une classe de toutes les autres.
+
+La fonction de décision pour la classe $k$ est notée $f_k(\mathbf{x})$. La classe prédite est celle avec le score le plus élevé~:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{Chapters/images/figure54.png}
+    \caption{A gauche, le SVM spécialisé dans la reconnaissance des guêpes, au centre dans la reconnaissance des frelons et à droite des abeilles (on suppose qu'on a trouvé un kernel trick approprié à chaque fois, afin d'obtenir une frontière non linéaire)}
+    \label{fig:ova}
+\end{figure}
+
+\begin{equation}
+    \hat{y} = \arg\max_k f_k(\mathbf{x})
+    \label{eq:yhat_ova}
+\end{equation}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{Chapters/images/figure55.png}
+    \caption{Résultats des classifieurs one-vs-all~: l'observation est classée comme abeille}
+    \label{fig:ova_result}
+\end{figure}
+
+En cas de résultats multiples positifs ou tous négatifs, on choisit~:
+\begin{itemize}
+    \item Le classifieur le plus certain (distance maximale à la frontière) si plusieurs positifs
+    \item Le classifieur le moins certain (distance minimale) si tous négatifs
+\end{itemize}
+
+\textbf{Avantages~:}
+\begin{itemize}
+    \item Seulement $K$ classifieurs à entraîner
+    \item Simple à implémenter
+\end{itemize}
+
+\textbf{Inconvénients~:}
+\begin{itemize}
+    \item Problèmes de déséquilibre des classes (une classe vs toutes les autres)
+    \item Comparaison des scores potentiellement biaisée
+\end{itemize}
+
+\subsection{Comparaison des Approches}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Caractéristique} & \textbf{One-vs-One} & \textbf{One-vs-All} \\
+        \hline
+        Nombre de classifieurs   & $\frac{K(K-1)}{2}$  & $K$ \\
+        Déséquilibre des classes & Moins sensible       & Plus sensible \\
+        Temps d'entraînement     & Plus long (quadratique) & Plus court (linéaire) \\
+        Calibration des scores   & Meilleure            & Moins bonne \\
+        \hline
+    \end{tabular}
+    \caption{Comparaison des deux approches multiclasses}
+    \label{tab:comparaison}
+\end{table}
+
+Le choix entre ces méthodes dépend du problème spécifique, du nombre de classes et des ressources disponibles.
 
 \section*{Conclusion}
 Les Support Vector Machines (SVM) sont des algorithmes de classification et de régression puissants, particulièrement efficaces pour les problèmes à haute dimensionnalité et pour les jeux de données où les classes sont bien séparables. Grâce à l'utilisation des marges maximales et des noyaux (kernels), les SVM peuvent modéliser des frontières de décision complexes tout en minimisant le risque de surapprentissage. Bien qu'ils puissent être sensibles aux choix des hyperparamètres et coûteux en calcul pour de très grands ensembles de données, leur précision et leur robustesse font des SVM un outil essentiel dans la boîte à outils de l'apprentissage automatique.

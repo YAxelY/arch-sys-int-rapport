@@ -1,158 +1,96 @@
-\chapter{Analyse des résultats, discussion et perspectives}
+\chapter{ANALYSE DES RESULTATS, DISCUSSION ET PERSPECTIVES}
+\section{Analyse des Résultats}
 
-%----------------------------------------------------------------
-\section{Introduction}
-%----------------------------------------------------------------
+\subsection{Évaluation des Modèles Individuels (SVM, Random Forest, XGBoost)}
+Dans cette première phase d'analyse, nous comparons les performances des trois modèles d'apprentissage automatique de base (SVM, Random Forest et XGBoost) sur notre jeu de données de détection du diabète. Les métriques évaluées comprennent l'Accuracy (exactitude), la Précision, le Recall (sensibilité), le F1-Score et l'aire sous la courbe ROC (ROC-AUC).
 
-La présente section s'attache à décrypter exhaustivement la substance clinique et mathématique qui sous-tend les relevés bruts énumérés au chapitre achevé. Dépassant la simple juxtaposition chiffrée, nous exposons de manière critique les comportements individuels des algorithmes évalués en croisant leurs paradigmes théoriques formels avec les spécificités de notre corpus de santé. Nous questionnerons avec une exigence scientifique de premier plan les limites de notre dispositif expérimental avant de formuler des recommandations très précises encadrant les investigations futures.
+D'après les résultats expérimentaux obtenus, le modèle \textbf{SVM avec noyau RBF} présente les performances les plus modestes, avec une Accuracy de 0.8052 et un F1-Score de 0.7000. Son Recall de 0.6481 indique une difficulté à identifier correctement tous les patients diabétiques. 
 
-%----------------------------------------------------------------
-\section{Mise en perspective comparative des modèles}
-%----------------------------------------------------------------
+En revanche, les modèles basés sur les arbres de décision offrent des résultats nettement supérieurs. Le \textbf{Random Forest} atteint une Accuracy de 0.8896 et un F1-Score de 0.8440, montrant une excellente capacité de généralisation. Le modèle \textbf{XGBoost} se distingue particulièrement avec des performances similaires en Accuracy (0.8896) mais un F1-Score légèrement supérieur (0.8496) et un Recall optimal de 0.8889, prouvant sa robustesse face à des données complexes et déséquilibrées.
 
-\subsection{Hiérarchisation des performances et écarts statistiques transcendants}
+\subsection{Impact des Modèles Avancés (Voting Ensemble et Stacking)}
+Afin de repousser les limites des modèles individuels, plusieurs architectures d'apprentissage ensembliste avancées ont été testées : un \textit{Soft Voting Ensemble}, un \textit{Stacking avec Régression Logistique} et un \textit{Stacking (v2) avec XGBoost} comme méta-apprenant.
 
-L'examen scrupuleux de la nomenclature récapitulative finale dégage un classement fondamental des stratégies mathématiques testées, qui s'articule formellement autour de trois paliers d'efficience majeurs.
+Le modèle \textit{Stacking v2}, qui permet au méta-apprenant d'accéder aux caractéristiques originales (passthrough), obtient d'excellents résultats avec un ROC-AUC de 0.9461. Cependant, son F1-Score (0.8077) et son Recall (0.7778) restent en deçà de ceux du modèle XGBoost individuel. Le \textit{Soft Voting Ensemble} présente quant à lui une approche équilibrée mais n'améliore pas significativement les performances par rapport aux meilleurs modèles de base (Accuracy de 0.8701).
 
-\textbf{Le premier palier (Architectures d'ensembles à pondération dynamique, AUC $\geq$ 0.945).} En position de suprématie incontestée, l'algorithme d'extrême régularisation par descente de gradient (XGBoost) cumule une surface roc-roc de 0.9496 en parfaite symétrie avec le groupement des forêts aléatoires paramétrées s'élevant à 0.9453. Cette variation infime de 0.0043 entre leurs scores demeure statistiquement insignifiante. Cette très troublante similarité indique qu'un seuil maximal absolu d'extractibilité de l'information (plateau de performance indépassable) a été conjointement atteint par ces structures.
+Ces résultats démontrent que, bien que les méthodes de Stacking et de Voting soient structurellement plus complexes et théoriquement plus performantes, elles ne surpassent pas nécessairement un algorithme XGBoost rigoureusement optimisé, notamment grâce à notre recherche fine d'hyperparamètres via Optuna (plus de 200 essais).
 
-\textbf{Le deuxième palier (Empilements algorithmiques de type Stacking, AUC $\in$ [0.929, 0.939]).} Occupant le segment intermédiaire, la combinaison \textit{Voting Ensemble} et ses pendants empilés subissent une contrainte singulière. En dépit de leur sophistication computationnelle (agglomération et recyclage des signaux des trois estimateurs par un méta-arbitre croisé), elles échouent globalement à surpasser la configuration isolée maximale. L'interprétation mathématique rigoureuse de ce phénomène pointe du doigt une multicolinéarité très marquée des inférences produites par XGBoost et Random Forest, tarissant prématurément le gain espéré par la complexité ensembliste.
-
-\textbf{Le troisième palier (Hyperplan scalaire via SVM, AUC = 0.859).} Sensiblement distancée, l'approche gaussienne SVM (RBF) s'incline lourdement, accusant un déficit compris entre 0.086 et 0.091 points par comparaison aux solutions basées sur la partition de domaines. L'infirmité symptomatique se visualise par une mesure d'harmonie F1 restreinte à 0.700. Cette faiblesse atteste viscéralement de la difficulté chronique de l'architecture pour modéliser le seuil complexe où siègent les patients véritablement diagnostiqués diabétiques.
-
-\subsection{Décryptage de l'équilibre Précision-Rappel au prisme clinique}
-
-Le contexte hospitalier dicte des impératifs rigides : il pénalise sévèrement l'omission asymétrique. D'un côté, un malade indétecté faute de décelabilité (le cas de faux négatif clinique) bascule injustement vers une privation des protocoles préventifs et risque des altérations chroniques catastrophiques. Inversement, alarmer par excès un individu intègre (faux positif) engendre assurément un tort psychologique mais engage consécutivement moins le pronostic vital décennal. Soumise à cet arbitrage, la priorité absolue incombe à la maximisation sans heurts du seuil de rappel (sensibilité métabolique).
-
-Le tableau exclusif~\ref{tab:recall_comparison} ausculte scrupuleusement le recensement d'omissions par architecture au sein de l'ultime cohorte dissimulée.
+\subsection{Analyse Comparative et Sélection du Meilleur Modèle}
+Le tableau ci-dessous synthétise les performances des différents modèles évalués :
 
 \begin{table}[htbp]
-    \centering
-    \caption{É Valuation minutieuse relative à la sensibilité de détection sur 54 cas diabétiques certains}
-    \label{tab:recall_comparison}
-    \small
-    \begin{tabular}{lcc}
-        \hline
-        \textbf{Catégorie du Modèle} & \textbf{Sensibilité (Rappel)} & \textbf{Omissions absolues (Faux Négatifs sur 54)} \\
-        \hline
-        Voting Ensemble & 0.9074 & 5 patients manqués \\
-        XGBoost & 0.8519 & 8 patients manqués \\
-        Random Forest & 0.8519 & 8 patients manqués \\
-        Stacking (LR) & 0.8889 & 6 patients manqués \\
-        Stacking v2 & 0.7778 & 12 patients manqués \\
-        SVM (RBF) & 0.6481 & 19 patients manqués \\
-        \hline
-    \end{tabular}
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Modèle} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{ROC-AUC} & \textbf{CV AUC} \\
+\midrule
+XGBoost & 0.8896 & 0.8136 & 0.8889 & 0.8496 & 0.9517 & 0.9486 \\
+Stacking v2 & 0.8701 & 0.8400 & 0.7778 & 0.8077 & 0.9461 & 0.9455 \\
+Random Forest & 0.8896 & 0.8364 & 0.8519 & 0.8440 & 0.9453 & 0.9378 \\
+Stacking (LR) & 0.8766 & 0.8302 & 0.8148 & 0.8224 & 0.9317 & 0.9439 \\
+Voting Ensemble & 0.8701 & 0.7931 & 0.8519 & 0.8214 & 0.9337 & 0.9384 \\
+SVM (RBF) & 0.8052 & 0.7609 & 0.6481 & 0.7000 & 0.8589 & 0.8714 \\
+\bottomrule
+\end{tabular}
+\caption{Comparaison des performances des modèles sur le jeu de test}
+\label{tab:comparaison_modeles}
 \end{table}
 
-Dominant formellement ce paramètre, la coalition prédictive du \textit{Voting Ensemble} circonscrit l'omission à cinq malades insoupçonnés sur cinquante-quatre existants (rappel record de 0.907). Néanmoins, cette apparente virtuosité camoufle une faiblesse mécanique (une asymétrie de seuil fixée à 0.403 en comparaison du point XGBoost placé à 0.639) et dégrade proportionnellement la discrimination des patients normaux.
+À la lumière de ce tableau, \textbf{XGBoost} est sélectionné comme le meilleur modèle global. Il excelle sur la majorité des métriques, avec le ROC-AUC le plus élevé (0.9517) et une excellente stabilité en validation croisée (0.9486). Avec une Accuracy frôlant les 90\%, il représente le compromis idéal entre précision de prédiction et sensibilité au dépistage.
 
-\subsection{Impact majeur de la modification empirique des limites probantes}
+\section{Discussion}
 
-Une avancée très éloquente formalisée par le développement de cet espace logiciel réside dans la transgression justifiée de la symétrie algorithmique binaire (borne bloquée à 0.50). Cette adaptation de certitude, abaissant le barycentre du critère d'appartenance de la pathologie jusqu'à un repère minimaliste de 0.339 pour le noyau gaussien asymétrique, a redéfini positivement les bornes de prédiction pour les échantillons instables de la frontière. L'innovation de notre démarche souligne l'absurdité académique d'un tel clivage arbitraire, pourtant abondamment encouragé, qui détériore systématiquement les comparaisons dès lors qu'un des estimateurs accuse un décentrage statistique fondamental.
+\subsection{Impact Décisif du Prétraitement et de l'Ingénierie des Données}
+Une part majeure du succès de notre modèle réside dans la phase rigoureuse de préparation des données. L'application d'une stratégie d'imputation par classe (médiane) pour corriger les zéros aberrants (ex: taux de glucose ou tension artérielle nuls), combinée à la technique de Winsorization (1er et 99ème percentiles) pour atténuer l'impact des valeurs extrêmes, a considérablement purifié l'espace des descripteurs.
 
-%----------------------------------------------------------------
-\section{Lecture causale théorique des comportements observés}
-%----------------------------------------------------------------
+De plus, la distribution initiale des données souffrait d'un asymétrie de classes (500 non diabétiques / 268 diabétiques). L'utilisation de l'algorithme \textbf{Borderline-SMOTE}, couplée à une transformation de puissance (PowerTransformer, méthode Yeo-Johnson), a permis de générer des échantillons synthétiques de haute qualité près des frontières de décision. Par rapport à une approche basique sans ce pipeline avancé, les performances globales ont connu un bond exceptionnel : \textbf{+0.1364} en Accuracy (passant de 0.7532 à 0.8896) et \textbf{+0.2150} en F1-Score.
 
-\subsection{Limitation intrinsèque du support vectoriel linéaire}
-
-Le défaussage massif de la modélisation spatiale unitaire (SVM) comparativement à la prolifération arborisée s'élucide au confluent des fondements paramétriques sous-jacents. 
-
-Premièrement, le système à vecteur global esquisse de façon unique un hyperplan au sein d'une topologie refondue par la fonction gaussienne. Cependant, le modèle refuse méthodiquement toute évaluation implicite des interdépendances non planaires entre certains axes (le cas manifeste de l'influence décuplée entre l'âge et la croissance corporelle, ou du taux de glycémie rapporté au poids total du patient). Par totale opposition analytique, l'arborescence structurelle (Random Forest) ou soumise à correction en série (XGBoost) morcelle l’espace infini à chaque division et enserre invariablement n'importe quelle anomalie non-linéaire conditionnée. 
-
-Deuxièmement, les modules d'amplification itérative du gradient adoubé (XGBoost) modulent naturellement les disparités volumétriques via la compensation mathématique pondérée orientée (le tenseur interne \texttt{scale\_pos\_weight}). Le SVM nécessitera toujours contre lui un recalcul coûteux imposé à un hyperplan originellement réfractaire aux nuances. De plus, la variance introduite par l'amorçage aléatoire (processus natif du bootstrap couplé à la dissimulation sectorielle des attributs à chaque ramification) limite de fait la surimposition algorithmique (\textit{overfitting}) souvent dommageable. L'application du classificateur SVM contraint son utilisateur d'accepter une marge très singulière pour affronter une réalité pathologique manifestement floue et intriquée.
-
-\subsection{Topographie de l'influence vectorielle des facteurs de risque cliniques}
+Il est également intéressant d'analyser l'importance des variables utilisées par les modèles, illustrée en Figure~\ref{fig:feature_importance}. Les caractéristiques cliniques (comme la glycémie, l'âge, le BMI et l'insuline) jouent un rôle prépondérant dans la prise de décision, avec des corrélations fortes mesurées via l'Information Mutuelle.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\linewidth]{Chapters/images/feature_importance.png}
-    \caption{Oscillation comparative évaluant les quinze composantes majeures en matière d'apport absolu à la prédiction, mise en balance à travers la Forêt Aléatoire et l'architecture XGBoost. Les composants artificiellement modélisés se hissent massivement parmi les vecteurs capitaux.}
+    \includegraphics[width=1\textwidth]{Chapters/images/feature_importance_mi.png}
+    \caption{Importance relative des caractéristiques selon l'Information Mutuelle}
+    \label{fig:feature_importance_mi}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Chapters/images/feature_importance_rf_xgb.png}
+    \caption{Comparaison de l'importance des caractéristiques (Random Forest vs XGBoost)}
     \label{fig:feature_importance}
 \end{figure}
 
-L'évaluation graphique du poids relatif assigné par la forêt aléatoire et par l'amplificateur du gradient au moment précis des déductions conditionnelles, minutieusement reproduite via la vue consolidée de la figure~\ref{fig:feature_importance}, corrobore de prime abord un principe séculier. La valeur primitive de \texttt{Glucose} assortie du \texttt{Risk\_Score} ultra-hybride prônent formellement par leur caractère exclusif lors du partage de domaines (splits nodaux). Autrement dit, le réseau artificiellement synthétisé confère naturellement sa position inébranlable au taux de sursaturation glycogénique sanguine modélisé, qui gouverne d'ailleurs cliniquement la maladie depuis des décennies. 
+\subsection{Interprétation Clinique des Métriques}
+Dans le cadre du diagnostic médical assisté par intelligence artificielle, particulièrement pour une pathologie silencieuse et grave comme le diabète, l'Accuracy globale n'est pas la seule métrique à observer. Il est fondamental de minimiser les \textit{faux négatifs} (un patient malade diagnostiqué à tort comme sain), car un retard de prise en charge peut entraîner de lourdes complications.
 
-La variable insuline brute, en dépit de son classement souverain éphémère relevé très initialement (section 5.5, avec 0.326 en dépendance stochastique), encaisse paradoxalement un repli flagrant en situation matricielle de gradient. Cette volatilité se rationalise en étudiant les fondations imputées (le rapiéçage numérique de 374 cases absentes originelles dont la moyenne injectée ne reproduisait artificiellement qu'un leurre du profil). Inversement stupéfiant, le modèle mathématiquement très faible de transmission intergénérationnelle (\texttt{DiabetesPedigreeFunction}, doté d'un minuscule score théorique isolé de 0.018) est soudainement plébiscité par le groupe XGBoost qui y détecte sans l'ombre d'un doute le facteur pivot corrélé subtilement à une double condition : l'âge mûr couplé aux redondances utérines antérieures de la patiente aborigène.
+C'est pourquoi l'optimisation a fortement ciblé le \textbf{Recall} (sensibilité) et le \textbf{F1-Score}. Selon le rapport de classification final de XGBoost, le modèle atteint un Recall de 0.8889 sur la classe "Diabétique". Cela signifie que l'algorithme identifie correctement près de 89\% des patients réellement atteints de diabète, offrant ainsi un excellent outil de dépistage précoce limitant les risques de non-détection.
 
-\subsection{Mesure exacte de la progression apportée par le pipeline expérimental}
+La Figure~\ref{fig:confusion_matrix} illustre la matrice de confusion obtenue par les trois meilleurs modèles (XGBoost, Stacking v2, Random Forest) sur l'ensemble de test. Elle met en évidence la capacité de XGBoost à identifier la grande majorité des patients diabétiques (réduisant les faux négatifs à 11.1\%). La performance globale comparative est également confirmée par la Figure~\ref{fig:roc_curve}, où la courbe ROC de XGBoost et des modèles d'ensemble dominent l'espace, résultant en d'excellents scores ROC-AUC (> 0.94).
 
-Afin d'ausculter rigoureusement l'étendu colossal de la refonte mathématique, il convient de dresser le bilan des métriques d'une analyse naïve de l'échantillon brut avec ce que cet audit expérimental vient d'achever.
-
-\begin{table}[htbp]
+\begin{figure}[htbp]
     \centering
-    \caption{Rendement chiffré : Synthèse du bénéfice incontestable des processus ajoutés pour XGBoost}
-    \label{tab:pipeline_comparison}
-    \small
-    \begin{tabular}{lccc}
-        \hline
-        \textbf{Indicateur Évaluatif} & \textbf{Approche Simpliste Initiale} & \textbf{Refonte Structurelle Présente} & \textbf{Accroissement Technique} \\
-        \hline
-        L'Exactitude & 0.7532 & 0.8896 & Accrue formellement de $+0.1364$ \\
-        L'Harmonie Mixte (F1) & 0.6346 & 0.8440 & Accrue formellement de $+0.2094$ \\
-        L'Aire Convexo-Concave (AUC) & 0.8261 & 0.9496 & Accrue formellement de $+0.1235$ \\
-        \hline
-    \end{tabular}
-\end{table}
+    \includegraphics[width=1\textwidth]{Chapters/images/cm_top3.png}
+    \caption{Matrices de Confusion des algorithmes les plus performants}
+    \label{fig:confusion_matrix}
+\end{figure}
 
-La prodigieuse rémission de vingt points complets octroyée à l'harmonie mixte de classe (le fameux score F1), qui bondit ostensiblement au-delà des projections attendues (tableau~\ref{tab:pipeline_comparison}), n'est en somme que le fruit combinatoire d'une série de manipulations minutieuses et interdépendantes. La stratification structurelle de huit nouveaux paramètres biomathématiques alliés conjointement à une injection proportionnellement équilibrée aux confins des clusters marginaux (Borderline-SMOTE) a permis la transfiguration du banal pronostic informatique vers la quasi certitude prédictive.
-
-%----------------------------------------------------------------
-\section{Analyse de nos carences protocolaires et limites scientifiques}
-%----------------------------------------------------------------
-
-\subsection{Précarité de la validité externe issue d'un profil anthropomorphique très singulier}
-
-L'euphorie scientifique des pourcentages records ne saurait cependant escamoter la validité strictement contrainte de cet algorithme face à de nouveaux univers probabilitistes. Le fichier initial se restreint de manière insulaire à l'étude stricte d'une micro-population d'amérindiennes Pimas passées outre la post-adolescence. Les prédispositions endocriniennes singulières d'une telle géographie tribale dénient une quelconque garantie d'applicabilité vers les métabolismes des diasporas mondiales de demain. Le réseau complexe tissé et surentraîné sur l'unique signature immunologique indienne risquerait une désastreuse incompréhension analytique au chevet d'un protocole clinique de dépistage standard (chez le patient européen typique par exemple).
-
-\subsection{Distorsion spéculative résultante d'un palliatif volumétrique artificiel}
-
-L'effort substantiel de compensation logicielle pour gommer l'ellipse béante concernant l'index de l'insuline porte assurément un dommage intellectuel tacite. Sur pas moins de 768 éléments vivants passés en revue, l'outil s'est abrogé la lourde besogne mathématique d'incorporer 374 valeurs fantômes (soit 48,7\% de cette série biologique globale). Plus fâcheux, l'injection statistique d'une pure valeur factice calquée sur la projection majoritaire interne dénature incidemment l'étalon réel pour surexploiter l'apparence des corrélations endémiques existantes au péril de leur intégrité scientifique. L'omission radicale de cet axe variable aurait logiquement nécessité une contre-étude afin que nulle distorsion spectaculaire n'altère de manière trompeuse notre classement analytique final.
-
-\subsection{L'opacité prédictive face à la responsabilité médicolégale}
-
-Concevoir une architecture virtuose dont l'opacité est irrévocablement garantie par l'entrecroisement de milliers d'arbres déductifs n'aide en rien le médecin biologiste à formuler l'origine intime de la future déroute immunitaire d'un malade particulier. Dans ce carcan, nos méthodes statistiques éminentes se cantonnent malheureusement à des dogmes divinatoires très éloignés de tout fondement argumentatif. Le besoin criant, pressenti par l'évolution de la doctrine hospitalière, devra obliger à l'avenir la juxtaposition minutieuse de métriques topographiques interprétables (technologie par la théorie algorithmique des jeux coalisés, telle que le processus mathématique exclusif de SHapley), seules garantes de concilier calcul probabiliste et explicabilité humaine.
-
-%----------------------------------------------------------------
-\section{Confrontation des conclusions à l'état de la recherche contemporaine}
-%----------------------------------------------------------------
-
-La validation objective du bien-fondé empirique d'une telle étude mathématique implique un constat pragmatique et intransigeant quant aux résultats d'ores et déjà répertoriés par l'archéologie académique attenante. Le récapitulatif strict est synthétisé au tableau~\ref{tab:sota_comparison}.
-
-\begin{table}[htbp]
+\begin{figure}[htbp]
     \centering
-    \caption{Parallélisme intransigeant des accomplissements du présent rapport face à la littérature pionnière sur le groupe diabétique Pima}
-    \label{tab:sota_comparison}
-    \small
-    \begin{tabular}{p{3.5cm} p{2.5cm} p{2.5cm} p{2.5cm}}
-        \hline
-        \textbf{Enseignement ou Étude Ciblée} & \textbf{Le Prototype Majuscule} & \textbf{Précision Générale (Acc)} & \textbf{Couverture Intégrale (AUC)} \\
-        \hline
-        L'investigation par Zou et al. \citep{zou2018} & Réseau de type Random Forest & 0.8084 & Absente des résultats parus \\
-        L'analyse d'Iparraguirre et al. \citep{iparraguirre2023} & Structure de K-plus-proche assistée de SMOTE & 0.7960 & Absente des résultats parus \\
-        Les constats de Khanam et al. \citep{khanam2021} & Alliance LR / et hyperplans SVM & 0.7900 & Absente des résultats parus \\
-        La tentative de Sisodia \citep{sisodia2018} & Estimation fréquentiste scalaire Naïve Bayes & 0.7630 & Absente des résultats parus \\
-        \hline
-        \textbf{Notre Démonstration Scientifique Présente} & \textbf{Complexe de division séquentielle (XGBoost d'Optuna)} & \textbf{0.8896} & \textbf{0.9496 de surface couverte} \\
-        \hline
-    \end{tabular}
-\end{table}
+    \includegraphics[width=0.9\textwidth]{Chapters/images/roc_curves_all.png}
+    \caption{Courbes ROC de l'ensemble des modèles évalués}
+    \label{fig:roc_curve}
+\end{figure}
 
-Les ratios vertigineux de nos algorithmes viennent écraser allègrement les pourcentages traditionnels émanant de l'enquête bibliographique passée. Ces dérèglements substantiels s'incarnent principalement comme le dénouement légitime de nos interventions chirurgicales préalables de la donnée quantifiée brute. Très majoritairement ignoré ou partiellement traité à travers l'archive expérimentale, l'alliage méticuleusement calculé formé par l'interpénétration non linéaire de SMOTE aux portes frontalières asymétriques, additionné au remodelage géométrique Yeo-Johnson, donne aujourd'hui ce rendement sans appel.
+\subsection{Limites de l'Étude Expérimentale}
+Malgré ces résultats très encourageants, l'étude présente certaines limites inhérentes au jeu de données "Pima Indians Diabetes". D'une part, la taille relativement modeste du dataset (768 individus dont seulement 154 en jeu de test) rend les scores d'évaluation sensibles aux variations d'échantillonnage, bien que la validation croisée stratifiée atténue ce risque. 
 
-%----------------------------------------------------------------
-\section{Ouvertures techniques prospectives}
-%----------------------------------------------------------------
+D'autre part, la technique de suréchantillonnage Borderline-SMOTE, bien que très efficace, génère des données synthétiques. Cela implique une forte dépendance aux paramètres du SMOTE, et le modèle pourrait potentiellement réagir différemment en condition réelle face à une distribution de patients fondamentalement nouvelle. 
 
-Ce constat théorique invite immédiatement à esquisser les futurs desseins techniques du dépistage biologique assisté par de puissants solveurs d'incertitudes. 
+\section{Perspectives}
 
-Il sera inéluctablement réclamé une \textbf{confrontation de l'intégrité logicielle de grande échelle sur l'extériorité anatomique}. Le système nécessitera impérieusement une mise à l'épreuve radicale, projetant de fait l'architecture sur des banques matricielles exogènes, en prélevant par exemple l'abondance chiffrée issue des relevés sanitaires en territoire purement européen.  
+\subsection{Amélioration Continue du Modèle}
+Plusieurs pistes techniques pourraient être envisagées pour affiner davantage ce système d'aide au diagnostic. L'intégration de réseaux de neurones profonds (Deep Learning, comme les perceptrons multicouches testés en amont) pourrait capturer des interactions non linéaires complexes supplémentaires. De plus, une collecte de données cliniques issues d'hôpitaux locaux, plus vastes et plus diversifiées génétiquement que la population originelle (Pima Indians), serait nécessaire pour valider formellement la généralisation géographique et démographique du modèle de détection.
 
-Plus techniquement, \textbf{l'appropriation radicale des matrices par réseaux de convolution synaptiqués ou de transformateurs paramétrisables} (de la famille émergente TabNet ou les profonds mécanismes d'attention neuronale) pour décrypter d'excessives quantités vectorielles promet une rehausse indubitable. Il n'apparaît d'ailleurs pas de façon accidentelle qu'un prototype de perception perceptronisée multicellulaire (MLP) fut inclus originellement par notre écosystème logiciel aux fins de catalyser ponctuellement des diversités probabilistes ignorées du bagage déductif strict de nos modèles.
-
-Face au caractère profondément invasif de la clinique sérique (le redouté test oral intrusif du glucose et les collectes hématologiques itératives), la prouesse imminente et l'aspiration suprême viendront paradoxalement substituer \textbf{la récolte des signaux comportementaux strictement passifs ou anthropométriques externes à des données biologiques tangibles} dans un environnement à accès restreint ou un pays structurellement démuni d'infrastructures. 
-
-\section*{Épilogue}
-
-Le chapitre a consenti au croisement de la théorie algorithmique avec un constat pragmatique et quantifié surabondamment justifié. De manière triomphale, les empilements structurels profonds d'architectures s'interpénétrant conjointement (XGBoost et son analogue forestier Random Forest) annihilent méthodiquement les hésitations maladroites du calcul géométrique rigide de type SVM. L'ascension record et objective des chiffres (confinés à d'incroyables résultats d'efficacité) démode l'état actuel de la bibliographie contemporaine en la matière et invite fermement le domaine de l'intelligence probabiliste à des horizons où le pragmatique et la clarté explicable se côtoient inéluctablement.
+\subsection{Déploiement et Application Pratique}
+D'un point de vue architectural, l'aboutissement de ce projet ne réside pas uniquement dans l'entraînement d'un modèle performant, mais dans sa capacité à être déployé. La prochaine étape logique consiste à encapsuler ce modèle XGBoost au sein d'une architecture de \textbf{Système Multi-Agents (SMA)} ou d'une API de type microservice. Un agent intelligent "Diagnostic" pourrait alors s'interfacer en temps réel avec le dossier médical numérique des patients, analyser en continu leurs constantes biologiques (glycémie, IMC, tension artérielle) et alerter proactivement le personnel médical en cas de risque élevé, réalisant ainsi l'objectif premier des architectures de systèmes intelligents au service de la santé.
