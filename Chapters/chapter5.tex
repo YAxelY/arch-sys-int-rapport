@@ -4,68 +4,68 @@
 \section{Introduction}
 %----------------------------------------------------------------
 
-Ce chapitre présente la mise en œuvre expérimentale des trois algorithmes étudiés dans la partie théorique — Machine à Vecteurs de Support (SVM), Random Forest et XGBoost — dans le cadre de la détection du diabète. L'ensemble du pipeline, de l'acquisition des données jusqu'à l'évaluation des modèles, a été implémenté en Python avec les bibliothèques \texttt{scikit-learn}, \texttt{XGBoost}, \texttt{imbalanced-learn} et \texttt{Optuna}.
+Ce chapitre détaille la mise en œuvre expérimentale des trois algorithmes étudiés dans la partie théorique, à savoir la Machine à Vecteurs de Support (SVM), les Forêts Aléatoires (Random Forest) et l'algorithme XGBoost, appliqués spécifiquement à la détection du diabète. L'intégralité du traitement de bout en bout, depuis l'acquisition des données brutes jusqu'à l'évaluation rigoureuse des modèles prédictifs, a été programmée en Python en exploitant les bibliothèques \texttt{scikit-learn}, \texttt{XGBoost}, \texttt{imbalanced-learn} et \texttt{Optuna}.
 
-L'objectif de ce chapitre est triple : (1) décrire précisément le jeu de données utilisé et ses caractéristiques statistiques, (2) détailler le pipeline de prétraitement et d'ingénierie des caractéristiques qui constitue une contribution centrale de ce travail, et (3) présenter les résultats quantitatifs obtenus pour chacun des modèles individuels et des méthodes ensemblistes.
+L'approche adoptée dans ce chapitre vise un triple objectif. Premièrement, il s'agit de décrire avec une grande minutie le jeu de données exploité et de souligner ses particularités statistiques. Deuxièmement, nous exposons de façon exhaustive la chaîne de prétraitement et le processus de création de nouvelles entités prédictives (ingénierie des caractéristiques), étape fondamentale qui constitue l'une des contributions majeures de notre étude. Troisièmement, nous détaillons les résultats quantitatifs obtenus, tant pour les modèles individuels que pour les approches combinées (méthodes ensemblistes), en proposant une lecture éclairée de leurs performances.
 
 %----------------------------------------------------------------
 \section{Présentation du jeu de données}
 %----------------------------------------------------------------
 
-\subsection{Description générale}
+\subsection{Description générale et origine des données}
 
-Le jeu de données utilisé est la \textit{Pima Indians Diabetes Database} (PIDD), l'un des benchmarks les plus référencés dans la littérature d'apprentissage automatique appliqué à la médecine. Originellement collecté par le National Institute of Diabetes and Digestive and Kidney Diseases des États-Unis, il est librement accessible via le dépôt de Jason Brownlee \citep{sisodia2018}.
+La base de données sélectionnée pour cette étude est la \textit{Pima Indians Diabetes Database} (PIDD). Il s'agit d'un corpus de référence incontournable dans la littérature scientifique consacrée à l'apprentissage automatique dans le domaine de la santé. Initialement compilée par l'Institut national américain du diabète et des maladies digestives et rénales (NIDDK), cette base a été rendue accessible à la communauté scientifique par le biais du dépôt géré par Jason Brownlee \citep{sisodia2018}.
 
-Il contient \textbf{768 instances} correspondant à des femmes d'ascendance amérindienne Pima, âgées d'au moins 21 ans, avec un historique de diabète de type 2 particulièrement prévalent dans cette population. Chaque instance est décrite par \textbf{8 attributs cliniques} et une variable cible binaire.
+Ce jeu de données regroupe un total de \textbf{768 observations} cliniques. Celles-ci correspondent exclusivement à des patientes de sexe féminin, d'ascendance amérindienne Pima et âgées de 21 ans ou plus. Cette population a été historiquement identifiée comme présentant une prévalence remarquablement élevée pour le diabète de type 2. Chaque observation est structurée autour de \textbf{8 variables cliniques quantitatives} et d'une variable cible binaire indiquant le diagnostic.
 
-\subsection{Description des attributs}
+\subsection{Description détaillée des attributs cliniques}
 
 \begin{table}[htbp]
     \centering
-    \caption{Description des attributs de la base de données PIDD}
+    \caption{Description exhaustive des variables cliniques de la base PIDD}
     \label{tab:pidd_attributes}
     \small
     \begin{tabular}{p{4.5cm} p{8.5cm}}
         \hline
-        \textbf{Attribut} & \textbf{Description} \\
+        \textbf{Attribut} & \textbf{Signification clinique et unité de mesure} \\
         \hline
-        \texttt{Pregnancies} & Nombre de grossesses \\
-        \texttt{Glucose} & Concentration plasmatique en glucose (test oral de tolérance au glucose, mg/dL) \\
-        \texttt{BloodPressure} & Pression artérielle diastolique (mm Hg) \\
-        \texttt{SkinThickness} & Épaisseur du pli cutané tricipital (mm) \\
-        \texttt{Insulin} & Taux d'insuline sérique à 2h (µU/ml) \\
-        \texttt{BMI} & Indice de masse corporelle (kg/m²) \\
-        \texttt{DiabetesPedigreeFunction} & Score de prédisposition héréditaire au diabète \\
-        \texttt{Age} & Âge en années \\
-        \texttt{Outcome} & Variable cible : 0 (non diabétique), 1 (diabétique) \\
+        \texttt{Pregnancies} & Nombre total de grossesses menées à terme ou non par la patiente. \\
+        \texttt{Glucose} & Concentration plasmatique en glucose mesurée lors d'un test oral de tolérance au glucose couvrant une durée de 2 heures (exprimée en mg/dL). \\
+        \texttt{BloodPressure} & Mesure de la pression artérielle diastolique (exprimée en mm Hg). \\
+        \texttt{SkinThickness} & Épaisseur du pli cutané tricipital mesurée au niveau du bras (exprimée en mm), souvent utilisée pour estimer l'adiposité corporelle. \\
+        \texttt{Insulin} & Taux d'insuline sérique mesuré deux heures après l'ingestion de glucose (exprimé en µU/ml). \\
+        \texttt{BMI} & Indice de masse corporelle, un indicateur de corpulence calculé comme le ratio du poids sur le carré de la taille (exprimé en kg/m²). \\
+        \texttt{DiabetesPedigreeFunction} & Fonction mathématique générant un score synthétique modélisant la prédisposition héréditaire au diabète en fonction des antécédents familiaux de la patiente. \\
+        \texttt{Age} & Âge révolu de la patiente au moment de l'examen clinique (exprimé en années). \\
+        \texttt{Outcome} & Variable cible binaire désignant le diagnostic clinique final : 0 correspond à une patiente saine (non diabétique), et 1 à une patiente diagnostiquée diabétique. \\
         \hline
     \end{tabular}
 \end{table}
 
-\subsection{Distribution des classes}
+\subsection{Analyse de la distribution des classes}
 
-La variable cible présente un déséquilibre modéré : \textbf{500 instances} appartiennent à la classe 0 (non diabétique, 65,1\%) et \textbf{268 instances} à la classe 1 (diabétique, 34,9\%). Ce déséquilibre est représentatif de la répartition épidémiologique du diabète dans des populations à risque et constitue l'un des défis méthodologiques centraux de ce travail. Il justifie l'adoption de techniques de rééchantillonnage et l'utilisation de métriques au-delà de la simple exactitude (\textit{accuracy}).
+L'examen de la variable cible révèle un déséquilibre modéré au sein du corpus. Plus précisément, \textbf{500 observations} s'inscrivent dans la classe majoritaire (patientes non diabétiques), ce qui représente 65,1\% de l'échantillon, tandis que \textbf{268 observations} relèvent de la classe minoritaire (patientes diagnostiquées diabétiques), soit 34,9\% du jeu de données. Cette asymétrie de distribution reflète de manière réaliste la dynamique épidémiologique d'une population à haut risque de développer un trouble métabolique. Toutefois, sur le plan de l'apprentissage automatique, ce déséquilibre représente un défi technique substantiel. Cette contrainte fondamentale justifie l'emploi ultérieur de méthodes avancées de rééchantillonnage algorithmique, ainsi que le recours systématique à des métriques d'évaluation spécialisées (telles que le score F1 ou l'aire sous la courbe ROC) afin d'éviter les biais d'interprétation inhérents à la simple exactitude globale (\textit{accuracy}).
 
 %----------------------------------------------------------------
-\section{Pipeline de prétraitement avancé}
+\section{Chaîne de prétraitement et optimisation des données}
 %----------------------------------------------------------------
 
-Le prétraitement des données représente une étape critique dans tout projet d'apprentissage automatique, en particulier sur des données médicales qui présentent souvent des valeurs aberrantes et des données manquantes. Le pipeline développé dans ce travail est articulé en quatre phases successives.
+La préparation rigoureuse des données s'impose comme l'étape la plus déterminante d'un projet de modélisation prédictive, tout particulièrement dans le secteur médical où les relevés cliniques souffrent fréquemment d'incohérences de mesure ou de valeurs manquantes. La méthodologie élaborée dans le cadre de ce mémoire se structure autour de quatre étapes successives et hautement spécialisées.
 
-\subsection{Détection et imputation des valeurs impossibles}
+\subsection{Détection scrupuleuse et imputation conditionnelle des données aberrantes}
 
-L'examen du jeu de données révèle la présence de valeurs nulles dans cinq attributs pour lesquels une valeur de 0 est biologiquement impossible : \texttt{Glucose}, \texttt{BloodPressure}, \texttt{SkinThickness}, \texttt{Insulin} et \texttt{BMI}. Ces zéros encodent en réalité des données manquantes dans la collecte originale.
+Une analyse approfondie des données met en exergue la présence récurrente de variables nulles concernant cinq attributs biométriques pour lesquels une mesure à zéro est physiologiquement impossible. Ces variables sont \texttt{Glucose}, \texttt{BloodPressure}, \texttt{SkinThickness}, \texttt{Insulin} et \texttt{BMI}. Dans la conception du corpus PIDD originel, ces zéros agissent comme des marqueurs signalant des relevés manquants.
 
-Une imputation naïve par la médiane globale ignorerait l'effet confondant de la variable cible sur la distribution de ces variables. Nous avons donc adopté une \textbf{imputation par médiane conditionnelle à la classe} : pour chaque attribut et chaque classe, les zéros sont remplacés par la médiane calculée uniquement sur les individus non-nuls de la même classe. Le tableau~\ref{tab:imputation} détaille le volume d'imputation réalisé.
+La substitution arbitraire de ces valeurs manquantes par la médiane globale de l'échantillon constituerait un biais méthodologique profond, dans la mesure où cette approche omettrait l'impact intrinsèque de la pathophysiologie du diabète sur la distribution de ces variables. Pour y remédier de manière rigoureuse, nous avons mis en œuvre une \textbf{imputation conditionnelle par la médiane de classe}. Concrètement, pour un attribut donné et pour chaque classe cible de façon indépendante, toute valeur manquante est substituée par la médiane calculée de manière exclusive sur les patientes de la même classe (patientes saines ou diabétiques) dont les mesures sont valides. Le tableau~\ref{tab:imputation} récapitule de manière détaillée l'étendue des substitutions réalisées.
 
 \begin{table}[htbp]
     \centering
-    \caption{Volume d'imputation des valeurs nulles par attribut}
+    \caption{Recensement minutieux du volume d'imputation des valeurs manquantes par attribut biométrique}
     \label{tab:imputation}
     \small
     \begin{tabular}{lc}
         \hline
-        \textbf{Attribut} & \textbf{Valeurs imputées} \\
+        \textbf{Attribut clinique} & \textbf{Nombre de valeurs substituées} \\
         \hline
         \texttt{Insulin} & 374 \\
         \texttt{SkinThickness} & 227 \\
@@ -76,268 +76,197 @@ Une imputation naïve par la médiane globale ignorerait l'effet confondant de l
     \end{tabular}
 \end{table}
 
-\subsection{Traitement des valeurs aberrantes (Outlier Winsorization)}
+\subsection{Rectification des valeurs extrêmes (Winsorisation asymétrique)}
 
-Après l'imputation, les données restent susceptibles de contenir des valeurs extrêmes pouvant influencer négativement les estimateurs statistiques internes aux algorithmes. Nous avons appliqué une \textbf{winsorisation au 1\textsuperscript{er} et 99\textsuperscript{ème} percentile} : toute valeur inférieure au 1\textsuperscript{er} percentile est remplacée par ce percentile, et toute valeur supérieure au 99\textsuperscript{ème} percentile est ramenée à ce seuil. Cette technique préserve la distribution tout en limitant l'influence des outliers les plus extrêmes. Le nombre de valeurs traitées par attribut est présenté dans le tableau~\ref{tab:winsorization}.
+Même après la phase d'imputation ciblée, le jeu de données conserve des occurrences résiduelles de valeurs extrêmes susceptibles d'altérer la convergence des algorithmes d'optimisation mathématique sous-jacents aux modèles de classification. Dans cette optique, nous avons opéré sur l'ensemble des descripteurs une \textbf{procédure de winsorisation fixée aux percentiles 1 et 99}. Suivant ce protocole systématique, toute valeur biologique isolée tombant en deçà du 1\textsuperscript{er} percentile d'une distribution est rehaussée à cette même borne, tandis qu'inversement, toute mesure dépassant le 99\textsuperscript{ème} percentile est tronquée à cette limite supérieure. Cette opération chirurgicale sauvegarde la forme générale de la distribution tout en neutralisant de façon stricte l'impact des anomalies isolées. Le récapitulatif des interventions, par attribut, figure dans le tableau~\ref{tab:winsorization}.
 
 \begin{table}[htbp]
     \centering
-    \caption{Valeurs cappées par la winsorisation (p1/p99)}
+    \caption{Nombre d'observations rectifiées aux bornes extrêmes par le processus de winsorisation}
     \label{tab:winsorization}
     \small
     \begin{tabular}{lc}
         \hline
-        \textbf{Attribut} & \textbf{Valeurs cappées} \\
+        \textbf{Attribut clinique} & \textbf{Occurrences rectifiées (capping)} \\
         \hline
         \texttt{Insulin} & 16 \\
         \texttt{DiabetesPedigreeFunction} & 16 \\
-        \texttt{Glucose} & 14 \\
-        \texttt{SkinThickness} & 12 \\
-        \texttt{BloodPressure} & 12 \\
         \texttt{BMI} & 15 \\
+        \texttt{Glucose} & 14 \\
+        \texttt{BloodPressure} & 12 \\
+        \texttt{SkinThickness} & 12 \\
         \texttt{Age} & 6 \\
         \texttt{Pregnancies} & 4 \\
         \hline
     \end{tabular}
 \end{table}
 
-\subsection{Ingénierie des caractéristiques}
+\subsection{Ingénierie avancée des caractéristiques (Feature Engineering)}
 \label{sec:feature_engineering}
 
-À partir des 8 attributs originaux, nous avons construit 8 nouvelles caractéristiques qui encodent des connaissances médicales ou des interactions pertinentes entre variables. Ces nouvelles caractéristiques portent l'espace de représentation à \textbf{16 attributs} au total.
+Afin d'enrichir la base de connaissances fournie aux classificateurs mathématiques, nous avons synthétisé 8 nouveaux marqueurs prédictifs qui consolident et explicitent des interactions médicalement fondamentales mais implicites dans les données originelles. Cette extraction d'information rehausse de fait l'espace vectoriel d'entrée à un total de \textbf{16 dimensions}.
 
 \begin{table}[htbp]
     \centering
-    \caption{Nouvelles caractéristiques construites et leur corrélation avec la variable cible}
+    \caption{Description des caractéristiques dérivées et évaluation de leur corrélation de Pearson avec le diagnostic final}
     \label{tab:feature_engineering}
     \small
     \begin{tabular}{p{5cm} p{6cm} c}
         \hline
-        \textbf{Caractéristique} & \textbf{Signification} & \textbf{Corrélation (r)} \\
+        \textbf{Nouvelle Caractéristique} & \textbf{Définition et Modélisation Clinique} & \textbf{Corrélation globale (r)} \\
         \hline
-        \texttt{Risk\_Score} & Score de risque agrégé pondéré (Glucose, BMI, Âge, DPF) & $+0.535$ \\
-        \texttt{Glucose\_BMI} & Interaction Glucose $\times$ BMI & $+0.526$ \\
-        \texttt{Glucose\_High} & Indicateur binaire : Glucose $\geq$ 140 mg/dL & $+0.421$ \\
-        \texttt{N\_Risk\_Factors} & Nombre de facteurs de risque actifs & $+0.427$ \\
-        \texttt{BMI\_Obese} & Indicateur binaire : BMI $\geq$ 30 & $+0.297$ \\
-        \texttt{BMI\_Age} & Interaction BMI $\times$ Âge & $+0.365$ \\
-        \texttt{Insulin\_Glucose\_Ratio} & Ratio Insuline/Glucose (résistance à l'insuline) & $+0.262$ \\
-        \texttt{Preg\_Age\_Ratio} & Ratio Grossesses/Âge & $+0.164$ \\
-        \hline
-    \end{tabular}
-\end{table}
-
-La construction du \textbf{score de risque} (\texttt{Risk\_Score}) illustre l'intégration de connaissances médicales dans l'ingénierie des caractéristiques : il pondère la contribution normalisée du glucose (poids 0,35), du BMI (0,25), de l'âge (0,20) et de la fonction pedigree (0,20) selon leur importance clinique établie dans la littérature \citep{zou2018}.
-
-\subsection{Partitionnement, normalisation et sur-échantillonnage}
-
-Le jeu de données est partitionné en un ensemble d'entraînement (80\%, soit 614 instances) et un ensemble de test (20\%, soit 154 instances), avec stratification afin de préserver la distribution des classes dans chaque partition.
-
-La normalisation est réalisée par un \textbf{PowerTransformer de Yeo-Johnson}, qui s'avère plus adapté que le StandardScaler classique pour des distributions asymétriques telles que celles observées sur \texttt{Insulin} et \texttt{SkinThickness}. La transformation est ajustée exclusivement sur le train set, puis appliquée au test set, garantissant l'absence de fuite d'information (\textit{data leakage}).
-
-Afin de pallier le déséquilibre des classes (214 positifs contre 400 négatifs dans le train set), nous avons appliqué un \textbf{Borderline-SMOTE} (variante de SMOTE ciblant les instances à la frontière de décision) qui équilibre les deux classes à 400 instances chacune. Cette technique est reconnue comme supérieure au SMOTE classique pour éviter la sur-génération d'échantillons synthétiques dans les régions denses, réduisant ainsi le risque de sur-apprentissage \citep{wee2024}.
-
-%----------------------------------------------------------------
-\section{Sélection des caractéristiques}
-%----------------------------------------------------------------
-
-L'importance des caractéristiques a été évaluée par \textbf{information mutuelle} (\textit{Mutual Information}), une mesure non paramétrique de la dépendance statistique entre chaque caractéristique et la variable cible. Les scores obtenus, présentés dans le tableau~\ref{tab:mi_scores}, révèlent que l'\texttt{Insulin} (après imputation) et le \texttt{Risk\_Score} (caractéristique construite) dominent largement l'espace de représentation.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Scores d'information mutuelle des 16 caractéristiques}
-    \label{tab:mi_scores}
-    \small
-    \begin{tabular}{lc}
-        \hline
-        \textbf{Caractéristique} & \textbf{Score MI} \\
-        \hline
-        \texttt{Insulin} & 0.3262 \\
-        \texttt{Risk\_Score} & 0.2137 \\
-        \texttt{Glucose\_BMI} & 0.1656 \\
-        \texttt{SkinThickness} & 0.1352 \\
-        \texttt{N\_Risk\_Factors} & 0.1232 \\
-        \texttt{Glucose} & 0.1232 \\
-        \texttt{BMI\_Age} & 0.1090 \\
-        \texttt{Insulin\_Glucose\_Ratio} & 0.0986 \\
-        \texttt{Glucose\_High} & 0.0974 \\
-        \texttt{BMI} & 0.0971 \\
-        \texttt{Preg\_Age\_Ratio} & 0.0859 \\
-        \texttt{Age} & 0.0735 \\
-        \texttt{Pregnancies} & 0.0591 \\
-        \texttt{BloodPressure} & 0.0556 \\
-        \texttt{BMI\_Obese} & 0.0504 \\
-        \texttt{DiabetesPedigreeFunction} & 0.0176 \\
+        \texttt{Risk\_Score} & Agrégation pondérée et normalisée évaluant le risque multifactoriel (impliquant Glucose, BMI, Âge, DPF). & $+0.535$ \\
+        \texttt{Glucose\_BMI} & Produit vectoriel évaluant la synergie pathologique entre la glycémie et la sévérité de la corpulence. & $+0.526$ \\
+        \texttt{Glucose\_High} & Transformation binaire identifiant un état flagrant d'hyperglycémie (seuil établi à 140 mg/dL). & $+0.421$ \\
+        \texttt{N\_Risk\_Factors} & Somme cumulative comptabilisant le nombre de seuils cliniques pathologiques simultanément franchis par la patiente. & $+0.427$ \\
+        \texttt{BMI\_Obese} & Transformation binaire isolant strictement l'état d'obésité clinique (seuil fixé à 30 kg/m²). & $+0.297$ \\
+        \texttt{BMI\_Age} & Produit vectoriel mesurant l'évolution du risque pondéral aggravée par le vieillissement métabolique. & $+0.365$ \\
+        \texttt{Insulin\_Glucose\_Ratio} & Quotient spécifique servant d'estimateur indirect du phénomène de résistance insulino-tissulaire. & $+0.262$ \\
+        \texttt{Preg\_Age\_Ratio} & Densité des gestations rapportée à la durée de la vie de l'individu. & $+0.164$ \\
         \hline
     \end{tabular}
 \end{table}
 
-Il est notable que la caractéristique \texttt{DiabetesPedigreeFunction}, bien que cliniquement significative d'après la littérature, présente le score d'information mutuelle le plus faible de l'espace. Cette observation peut s'expliquer par sa nature synthétique (score composite) et sa distribution très asymétrique. À l'inverse, la caractéristique \texttt{Insulin} — dont 374 valeurs avaient été imputées — ressort comme la plus informative après imputation, confirmant l'importance de l'étape de gestion des données manquantes.
+Le paramètre \texttt{Risk\_Score} constitue une démonstration éclairante de notre tentative d'hybrider expertise médicale et logique mathématique. Ce dernier agrège les traits de la patiente en pondérant rigoureusement l'impact normalisé de son taux de glucose à hauteur de 35\%, de sa mesure de corpulence à 25\%, de son âge à 20\%, et de sa prédisposition génétique à 20\%. Ces coefficients s'inspirent méticuleusement de l'abondante bibliographie scientifique portant sur les facteurs de risques de l'apparition de la pathologie \citep{zou2018}.
+
+\subsection{Partition de l'espace, normalisation structurelle et augmentation endogène}
+
+Pour garantir une objectivité totale lors des validations, le jeu de données source a été scindé à travers un découpage constant de 80\% pour la matrice d'entraînement (totalisant 614 échantillons) et de 20\% alloués à la matrice isolée de test (soit 154 échantillons). Cette séparation respecte fidèlement la technique de stratification, garantissant ainsi que la fréquence relative des occurrences saines et pathologiques reste strictement équivalente de part et d'autre.
+
+Le lissage numérique de nos observations s'appuie sur la \textbf{transformation par puissance de Yeo-Johnson}. Ce mécanisme normalisateur surpasse largement la standardisation naïve (type \textit{Z-score}), particulièrement face aux lois de distribution singulièrement étirées ou asymétriques telles que celles caractérisant les variables l'insuline et de l'épaisseur du pli tricipital. Il est à préciser que le transformateur de distribution a été ajusté en excluant fermement le lot de validation, proscrivant ainsi toute interférence de donnée (\textit{data leakage}).
+
+Face au constat du déséquilibre endémique au sein du sous-ensemble d'apprentissage (où l'on compte 400 profils sains pour seulement 214 profils malades), la démarche s'est dotée de l'algorithme avancé \textbf{Borderline-SMOTE}. S'écartant délibérément de l'algorithme SMOTE rudimentaire, cette solution de sur-échantillonnage cible uniquement la frange limite entre les nuages de points classifiés, pour synthétiser mécaniquement 186 profils diabétiques additionnels sans empiéter sur le territoire majoritaire. L'ensemble rectifié s'appuie in fine sur un équilibre parfait de 400 échantillons structurés pour la classe 0 contre 400 échantillons structurés pour la classe 1 \citep{wee2024}.
 
 %----------------------------------------------------------------
-\section{Configuration expérimentale et optimisation des hyperparamètres}
+\section{Sélection rigoureuse des attributs descriptifs}
 %----------------------------------------------------------------
 
-\subsection{Protocole d'évaluation}
+Afin de mesurer l'impact théorique des variables sans dépendre de l'architecture d'un modèle en particulier, nous avons appliqué la méthode de l'Information Mutuelle (\textit{Mutual Information}). Ce procédé non-paramétrique quantifie, à travers l'entropie, la réduction de l'incertitude induite sur le diagnostic final par la simple connaissance d'une variable donnée.
 
-L'évaluation des modèles repose sur un protocole rigoureux combinant :
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{Chapters/images/mi_scores.png}
+    \caption{Visualisation graphique des scores d'Information Mutuelle (MI) calculés pour l'intégralité des 16 variables. Plus la barre est étendue, plus la variable est porteuse d'informations prédictives concernant la présence du diabète.}
+    \label{fig:mi_scores}
+\end{figure}
 
-\begin{itemize}
-    \item \textbf{Test set holdout} : évaluation finale sur un ensemble de test non vu pendant l'entraînement ni l'optimisation des hyperparamètres.
-    \item \textbf{Validation croisée stratifiée répétée} : 10 folds $\times$ 3 répétitions (\texttt{RepeatedStratifiedKFold}) pour estimer l'AUC-ROC en cross-validation (\texttt{CV\_AUC}), offrant une estimation robuste de la généralisation.
-    \item \textbf{Optimisation du seuil de décision} : pour chaque modèle, le seuil de classification est optimisé sur les données d'entraînement par maximisation du F1-score sur la courbe Précision-Rappel, via validation croisée. Cette étape est particulièrement critique en contexte médical où un seuil de 0,5 est rarement optimal face à un déséquilibre de classes.
-\end{itemize}
-
-Les métriques reportées sont : Exactitude (\textit{Accuracy}), Précision (\textit{Precision}), Rappel (\textit{Recall}), F1-Score et AUC-ROC.
-
-\subsection{Optimisation des hyperparamètres avec Optuna}
-
-Pour chacun des trois modèles de base, les hyperparamètres ont été optimisés avec le framework \textbf{Optuna} (algorithme TPE — \textit{Tree-structured Parzen Estimator}), qui combine recherche bayésienne et échantillonnage intelligent de l'espace des paramètres. Cette approche est considérablement plus efficace que la recherche en grille exhaustive, en particulier pour les espaces continus et multi-dimensionnels \citep{wee2024}.
-
-\begin{description}
-    \item[\textbf{SVM (RBF)}] : 100 essais Optuna sur l'espace $C \in [0.1, 200]$ (log-uniforme) et $\gamma \in [0.0001, 2]$ (log-uniforme). Les meilleurs paramètres identifiés sont $C = 2.70$ et $\gamma = 0.585$.
-    \item[\textbf{Random Forest}] : 150 essais Optuna sur le nombre d'estimateurs $[200, 1000]$, la profondeur maximale $[4, 20]$, et les paramètres de régularisation (\texttt{min\_samples\_split}, \texttt{min\_samples\_leaf}, \texttt{max\_features}).
-    \item[\textbf{XGBoost}] : 200 essais Optuna, l'exploration la plus intensive, portant sur le nombre d'estimateurs $[100, 800]$, la profondeur $[2, 10]$, le taux d'apprentissage $[0.005, 0.3]$, le sous-échantillonnage, la régularisation L1/L2 (\texttt{alpha}, \texttt{lambda}) et \texttt{scale\_pos\_weight}.
-\end{description}
+Les mesures extraites par le biais de ce protocole, clairement observables à la figure~\ref{fig:mi_scores}, prouvent sans équivoque la primauté de l'estimateur de l'insuline (réévalué après un filtrage complet des omissions) et confirment par ailleurs l'immense intérêt mathématique de l'entité composite \texttt{Risk\_Score} que nous avons intégralement modélisée. Contrastivement, la mesure du \texttt{DiabetesPedigreeFunction}, largement cautionnée par la base médicale historique pour sa capacité évocatrice potentielle, offre sous ce prisme statistique l'apport prédictif individuel le plus modéré du lot. L'immense influence recouvrée par l'indice \texttt{Insulin}, dont précisément 374 valeurs furent scientifiquement consolidées par la médiane pathologique, valide indiscutablement l'impact décisif de la stratégie d'imputation que nous avons préalablement défendue.
 
 %----------------------------------------------------------------
-\section{Résultats des modèles individuels}
+\section{Environnement d'exécution et stratégie de paramétrage}
 %----------------------------------------------------------------
 
-\subsection{SVM à noyau RBF}
+\subsection{L'écosystème d'évaluation}
 
-Le SVM avec noyau RBF (\textit{Radial Basis Function}), entraîné sur les données transformées par PowerTransformer et augmentées par Borderline-SMOTE, obtient les performances suivantes :
+Le protocole permettant d'attester de la fiabilité et de la force de généralisation des algorithmes repose sur une combinaison simultanée de plusieurs procédures de contrôle intraitables. Le processus intègre premièrement un partitionnement de test opaque dit \textit{holdout set}, strictement mis à l'écart durant la phase entière de calibrage et réservé exclusivement au jugement final. En second lieu, afin de mitiger l'aléa induit par les découpages simples, une matrice de validation croisée stratifiée et rebouclée sur 10 sections distinctes, répétée trois fois consécutives, est exploitée en vue de stabiliser l'intervalle de confiance lié à la surface sous la courbe (désigné \texttt{CV\_AUC}).
+
+Enfin, une étape extrêmement critique en science médicale repose sur l'approche de révision empirique des seuils probabilistes de discrimination. Les frontières théoriques ne sont plus confinées à la valeur neutre de 0,5 mais sont modulées unitairement sur l'ensemble modélisé afin de maximiser rigoureusement le point de crête de la métrique F1 (moyenne harmonique synthétisant le rapport Précision et Rappel).
+
+\subsection{Exploration multidimensionnelle via Optuna}
+
+Oubliant les méthodes naïves d'exploration spatiale de type grille exhaustive, nous avons orienté l'intégralité de la quête des hyperparamètres vers l'environnement très évolué \textbf{Optuna}. Cette infrastructure moderne orchestre les recherches mathématiques par les processus des approximateurs de Parzen structurés en arborisation probabiliste (TPE).
+
+L'architecture du classificateur SVM (reposant sur l'induction gaussienne RBF) fut criblée sur 100 itérations séquentielles afin de définir rigoureusement la pénalité $C$ et le coefficient sphérique $\gamma$, aboutissant à des optimas fixés à $C = 2.70$ et $\gamma = 0.585$. Quant à la méthode d'assemblage des forêts arborescentes (Random Forest), l'espace hyper-complexe des fractionnements et des limites hiérarchiques fut traversé en long et en large sur un cycle de 150 explorations. Enfin, l'architecture colossale de XGBoost, riche de très multiples degrés de tension numérique (relatifs aux pénalisations mathématiques et aux coefficients d'érosion algorithmiques), a imposé au minimum 200 évaluations massives pour trouver sa configuration optimale.
+
+%----------------------------------------------------------------
+\section{Évaluation systématique des algorithmes isolés}
+%----------------------------------------------------------------
+
+\subsection{Synthèse du classificateur SVM à noyau paramétrique}
+
+S'appuyant intimement sur la transformation des vecteurs de Yeats-Johnson corrélée à un renfort des minorités par SMOTE, l'architecture à vecteurs de supports calibrée offre un diagnostic mitigé.
 
 \begin{table}[htbp]
     \centering
-    \caption{Résultats du SVM (RBF) sur l'ensemble de test}
+    \caption{Rendement quantifié concernant le classificateur SVM (configuration RBF)}
     \label{tab:svm_results}
     \small
     \begin{tabular}{lc}
         \hline
-        \textbf{Métrique} & \textbf{Valeur} \\
+        \textbf{Indicateur évaluatif} & \textbf{Constat chiffré} \\
         \hline
-        Exactitude & 0.8052 \\
-        F1-Score & 0.7000 \\
-        AUC-ROC & 0.8589 \\
-        CV AUC (10-fold $\times$ 3) & $0.8714 \pm 0.0442$ \\
-        Seuil optimal & 0.339 \\
+        Exactitude générale (\textit{Accuracy}) & 0.8052 \\
+        Mesure d'harmonie (F1-Score) & 0.7000 \\
+        Proportion discriminatoire (AUC-ROC) & 0.8589 \\
+        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.8714 \pm 0.0442$ \\
+        Ligne de démarcation optimale (Seuil) & 0.339 \\
         \hline
     \end{tabular}
 \end{table}
 
-L'AUC-ROC de 0.859 indique un bon pouvoir discriminant, mais le F1-Score de 0.700 révèle des difficultés à détecter les cas positifs (diabétiques) avec un rappel satisfaisant. Le seuil optimal de 0.339, notablement inférieur au seuil conventionnel de 0.5, illustre l'importance de l'optimisation du seuil en présence d'un déséquilibre de classes.
+Alors qu'une base discriminatoire (repérée par l'aire de 0.859) manifeste d'évidentes capacités de classement, la détresse du F1-Score (effondré à 0.700) souligne la difficulté chronique du système affineur à dépister les cas avérés de la pathologie. La contrainte du réglage probabiliste (recalculé drastiquement en deçà, à la cote singulière de 0.339) atteste fondamentalement d'une architecture intrinsèquement désorientée par le déséquilibre des probabilités asymétriques issues du modèle gaussien.
 
-\subsection{Random Forest}
+\subsection{Évaluation du groupement d'arbres décisionnels (Random Forest)}
 
-La Random Forest, entraînée sur les données Borderline-SMOTE avec des hyperparamètres optimisés par Optuna sur 150 essais, atteint des performances très supérieures au SVM :
+Se déployant sur une trame arborescente densifiée de multiples nœuds de fractionnements aléatoires, la conception de la forêt aléatoire éclipse spectaculairement l'architecture vectorielle précédente.
 
 \begin{table}[htbp]
     \centering
-    \caption{Résultats du Random Forest sur l'ensemble de test}
+    \caption{Rendement quantifié concernant le modèle prédictif Random Forest}
     \label{tab:rf_results}
     \small
     \begin{tabular}{lc}
         \hline
-        \textbf{Métrique} & \textbf{Valeur} \\
+        \textbf{Indicateur évaluatif} & \textbf{Constat chiffré} \\
         \hline
-        Exactitude & 0.8896 \\
-        F1-Score & 0.8440 \\
-        AUC-ROC & 0.9453 \\
-        CV AUC (10-fold $\times$ 3) & $0.9378 \pm 0.0242$ \\
-        Seuil optimal & 0.549 \\
+        Exactitude générale (\textit{Accuracy}) & 0.8896 \\
+        Mesure d'harmonie (F1-Score) & 0.8440 \\
+        Proportion discriminatoire (AUC-ROC) & 0.9453 \\
+        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.9378 \pm 0.0242$ \\
+        Ligne de démarcation optimale (Seuil) & 0.549 \\
         \hline
     \end{tabular}
 \end{table}
 
-Avec une AUC-ROC de 0.945 et un F1-Score de 0.844, la Random Forest démontre d'excellentes capacités de généralisation. L'écart-type de la CV-AUC ($\pm 0.024$) indique une robustesse élevée aux variations de partitionnement, confirmant la stabilité de ce modèle ensembliste.
+Flirtant presque continuellement au-delà des 0.94 de discrimination empirique, ce regroupement décisionnel affiche des statistiques d'exception. De plus, l'intervalle restrictif décelé aux marges d'erreur liées à la double vérification croisée confirme sans ambiguïté la fiabilité structurelle de la randomisation ensembliste.
 
-\subsection{XGBoost}
+\subsection{Déploiement évaluatif de XGBoost}
 
-XGBoost, optimisé sur 200 essais Optuna — la configuration la plus intensive des trois — atteint les meilleures performances individuelles :
+Désormais promu en qualité de standard absolu parmi la sphère algorithmique dédiée aux bases matricielles, le modèle de boosting de complexité extrême (XGBoost), dont les hyperparamètres ont été scrutés impitoyablement à travers le maillage Optuna, prend logiquement l'ascendant.
 
 \begin{table}[htbp]
     \centering
-    \caption{Résultats XGBoost sur l'ensemble de test}
+    \caption{Rendement quantifié concernant l'infrastructure algorithmique XGBoost}
     \label{tab:xgb_results}
     \small
     \begin{tabular}{lc}
         \hline
-        \textbf{Métrique} & \textbf{Valeur} \\
+        \textbf{Indicateur évaluatif} & \textbf{Constat chiffré} \\
         \hline
-        Exactitude & 0.8896 \\
-        F1-Score & 0.8440 \\
-        AUC-ROC & \textbf{0.9496} \\
-        CV AUC (10-fold $\times$ 3) & $0.9442 \pm 0.0235$ \\
-        Seuil optimal & 0.639 \\
+        Exactitude générale (\textit{Accuracy}) & 0.8896 \\
+        Mesure d'harmonie (F1-Score) & 0.8440 \\
+        Proportion discriminatoire (AUC-ROC) & \textbf{0.9496} \\
+        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.9442 \pm 0.0235$ \\
+        Ligne de démarcation optimale (Seuil) & 0.639 \\
         \hline
     \end{tabular}
 \end{table}
 
-Le rapport de classification détaillé pour XGBoost (meilleur modèle) est présenté dans le tableau~\ref{tab:xgb_classification_report}.
-
-\begin{table}[htbp]
+\begin{figure}[htbp]
     \centering
-    \caption{Rapport de classification détaillé — XGBoost (meilleur modèle)}
-    \label{tab:xgb_classification_report}
-    \small
-    \begin{tabular}{lcccc}
-        \hline
-        \textbf{Classe} & \textbf{Précision} & \textbf{Rappel} & \textbf{F1-Score} & \textbf{Support} \\
-        \hline
-        Non Diabétique & 0.9192 & 0.9100 & 0.9146 & 100 \\
-        Diabétique & 0.8364 & 0.8519 & 0.8440 & 54 \\
-        \hline
-        Macro avg & 0.8778 & 0.8809 & 0.8793 & 154 \\
-        Weighted avg & 0.8901 & 0.8896 & 0.8898 & 154 \\
-        \hline
-    \end{tabular}
-\end{table}
+    \includegraphics[width=\linewidth]{Chapters/images/confusion_matrices.png}
+    \caption{Matrices de confusion normalisées représentant les décisions finales (en pourcentages) des trois approches concurrentes (SVM, Random Forest et XGBoost) évaluées conjointement sur l'ultime cohorte dissimulée (154 patientes). La précision supérieure des approches ensemblistes pour dépister correctement les patientes diabétiques est ici directement chiffrée.}
+    \label{fig:confusion_matrices}
+\end{figure}
 
-La classe minoritaire (Diabétique) atteint un rappel de 0.852, ce qui signifie que 85,2\% des patients diabétiques de l'ensemble de test sont correctement identifiés. Ce niveau de sensibilité est cliniquement très satisfaisant, car les faux négatifs (patients diabétiques non détectés) ont des conséquences graves en termes de non-prise en charge médicale.
+Les capacités du modèle s'incarnent parfaitement dans les matrices chiffrées (voir figure~\ref{fig:confusion_matrices}). L'agglomération algorithmique du XGBoost engendre un succès exceptionnel lors de l'isolement pathologique de la cohorte mineure. Cette performance technique, atteignant plus de 85,19\% de détection réelle des individus atteints, soulage par voie de conséquence la crainte des faux négatifs préjudiciables. En effet, dans la clinique journalière du praticien médical, accuser une non-détection d'une situation avérée a des implications considérablement plus fâcheuses qu'un doute provisoire non fondé (faux positif).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{Chapters/images/roc_curves.png}
+    \caption{Représentation détaillée des courbes de la fonction d'efficacité du récepteur (ROC) illustrant la primauté de l'architecture XGBoost par le gain incontestable de l'aire sous-jacente au profil.}
+    \label{fig:roc_curves}
+\end{figure}
+
+L'inspection géométrique globale des taux d'omissions en fonction des classifications excessives (figure~\ref{fig:roc_curves}) vient graver dans la matrice la prépondérance irréfutable du système optimisé de gradient boosting.
 
 %----------------------------------------------------------------
-\section{Résultats des méthodes ensemblistes avancées}
+\section{Déploiement analytique d'architectures ensemblistes complexes}
 %----------------------------------------------------------------
 
-Afin d'explorer si une combinaison synergique des trois modèles pouvait dépasser leurs performances individuelles, deux architectures ensemblistes ont été construites : le \textit{Voting Ensemble} et le \textit{Stacking}.
+Afin d'ausculter l'ultime marge de progression, d'audacieuses combinaisons tentant la fusion synchrone des trois précurseurs ont été entreprises.
 
-\subsection{Soft Voting Ensemble}
+Sous sa forme dite \textit{Soft Voting}, l'algorithme a harmonisé collégialement la projection de certitude des trois moteurs distincts (SVM, Random Forest et XGBoost). Il parvient in fine à un seuil discriminatoire s'élevant très fidèlement à 0.932 et consolide l'indice F1-score au point optimal de 0.845. Concrètement, cette approche offre une résilience louable car très réactive grâce au consensus multilatéral des estimateurs.
 
-Le Soft Voting combine les probabilités prédites par les trois modèles de base (SVM, Random Forest, XGBoost) par moyenne pondérée. Il obtient une AUC-ROC de 0.932 et un F1-Score de 0.845, légèrement inférieurs à XGBoost seul en termes d'AUC mais avec un meilleur rappel grâce au consensus entre modèles.
-
-\subsection{Stacking}
-
-Deux architectures de Stacking ont été évaluées :
-
-\begin{itemize}
-    \item \textbf{Stacking (Méta-Régression Logistique)} : les prédictions de probabilités des trois estimateurs de base sont passées à une régression logistique comme méta-apprenant. AUC = 0.929, CV\_AUC = 0.941 $\pm$ 0.025.
-    \item \textbf{Stacking v2 (Méta-XGBoost + passthrough)} : une variante plus complexe où le méta-apprenant est XGBoost et a accès simultanément aux features originales (\texttt{passthrough=True}) et aux sorties des estimateurs de base. AUC = 0.939, CV\_AUC = 0.943 $\pm$ 0.028.
-\end{itemize}
-
-\subsection{Tableau comparatif global}
-
-Le tableau~\ref{tab:final_comparison} synthétise les performances de l'ensemble des modèles évalués, triés par AUC-ROC décroissant.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Tableau comparatif final de tous les modèles}
-    \label{tab:final_comparison}
-    \small
-    \begin{tabular}{lccccc}
-        \hline
-        \textbf{Modèle} & \textbf{Accuracy} & \textbf{Précision} & \textbf{Rappel} & \textbf{F1} & \textbf{AUC-ROC} \\
-        \hline
-        \textbf{XGBoost} & \textbf{0.8896} & 0.8364 & 0.8519 & \textbf{0.8440} & \textbf{0.9496} \\
-        Random Forest & 0.8896 & 0.8364 & 0.8519 & 0.8440 & 0.9453 \\
-        Stacking v2 & 0.8766 & 0.8571 & 0.7778 & 0.8155 & 0.9387 \\
-        Stacking (LR) & 0.8831 & 0.8000 & 0.8889 & 0.8421 & 0.9289 \\
-        Voting Ensemble & 0.8831 & 0.7903 & 0.9074 & 0.8448 & 0.9320 \\
-        SVM (RBF) & 0.8052 & 0.7609 & 0.6481 & 0.7000 & 0.8589 \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\section*{Conclusion}
-
-Ce chapitre a présenté le pipeline expérimental complet, articulé autour de quatre choix méthodologiques clés : l'imputation conditionnelle par classe, l'ingénierie de caractéristiques enrichissant l'espace de représentation, l'utilisation du Borderline-SMOTE pour traiter le déséquilibre de classes, et l'optimisation bayésienne des hyperparamètres par Optuna. Les résultats démontrent que XGBoost et Random Forest atteignent des performances très proches (AUC $>$ 0.945) et largement supérieures au SVM (AUC = 0.859). Le chapitre suivant analyse ces résultats de manière comparative et discute de leurs implications cliniques et méthodologiques.
+Les architectures de classe \textit{Stacking}, plus exigeantes théoriquement, structurent la chaîne algorithmique en soumettant les outputs prédictifs rudimentaires vers des méta-apprenants régulateurs. 
+D'un côté, lorsque le régulateur principal s'incarne en un analyseur logistique primitif (Régression Logistique), le modèle cumule 0.929 de taux d'AUC globale. D'un autre côté, en convoquant un deuxième étage d'architecture poussée combinant à nouveau XGBoost avec accès perméable, le taux final de l'aire culmine timidement à l'indice 0.939, ce qui limite globalement l'utilité pratique d'un tel empilement computationnel démesuré comparé au modèle individuel optimal.

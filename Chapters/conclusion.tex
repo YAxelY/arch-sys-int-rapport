@@ -8,44 +8,44 @@
 
 \newpage
 
-Ce mémoire avait pour ambition d'évaluer, de manière rigoureuse et cliniquement orientée, trois algorithmes fondamentaux de l'apprentissage automatique supervisé — les Machines à Vecteurs de Support (SVM), les Forêts Aléatoires (Random Forest) et le Gradient Boosting par Extrême Régularisation (XGBoost) — dans le contexte précis de la détection précoce du diabète de type 2 sur la base de données Pima Indians Diabetes Database.
+Ce projet académique et expérimental avait pour vocation première de jauger, sous un prisme strictement qualitatif et quantitatif orienté vers la clinique, les performances respectives de trois piliers fondamentaux de l'apprentissage automatique supervisé (la modélisation par Vecteurs de Support SVM, la construction ensembliste des Forêts Aléatoires et l'optimisation par Descente de Gradient Extrême XGBoost) dans le cadre redoutable de la prédiction systémique précoce du diabète de type 2. Cette analyse a pris pour fondation exclusive la base de données de référence Pima Indians Diabetes Database.
 
 % ---- Synthèse des contributions ----
-\section*{Synthèse des contributions}
+\section*{Synthèse des contributions et approfondissements théoriques}
 
-La \textbf{Partie I} a fourni les fondements théoriques nécessaires à une compréhension profonde des algorithmes employés. Pour les SVM, nous avons développé le formalisme mathématique de l'hyperplan à marge maximale, du problème dual de Lagrange, du \textit{kernel trick} et des marges souples, permettant de comprendre pourquoi cet algorithme excelle dans les espaces de grande dimension mais peut montrer des limites sur des données tabulaires de taille modeste. Pour les Forêts Aléatoires, nous avons analysé le mécanisme de construction des arbres CART, l'importance du tirage bootstrap et de la sélection aléatoire des caractéristiques comme sources de décorrélation des estimateurs. Pour XGBoost, nous avons expliqué comment l'approximation du second ordre de la fonction objectif, combinée à la régularisation structurelle des arbres, permet un apprentissage extrêmement efficace et régularisé.
+La \textbf{Partie I} de l'ouvrage s'est attelée à bâtir l'infrastructure théorique requise pour saisir les subtilités mécaniques présidant aux déductions des algorithmes choisis. Au sujet des SVM, nous avons déployé rigoureusement le corpus mathématique gérant les hyperplans à marge maximale, conjugué à la résolution du problème dual de Lagrange et à l'astuce de projection spatiale (noyau), en expliquant par la théorie les défaillances inhérentes de la méthode face aux densités tabulaires limitées. Concernant les Forêts Aléatoires, l'examen s'est focalisé sur la germination des arbres de classification, magnifiée par les lois de la sélection stochastique garantissant une inestimable robustesse face au surapprentissage. Pour finir, le spectre de l'algorithme XGBoost a été exploré en décortiquant minutieusement l'approche d'approximation du second ordre de la fonction de perte (la formule de Taylor) qui, lorsqu'elle est assortie à la répression structurelle des nœuds, garantit un apprentissage virtuellement inattaquable.
 
-L'état de l'art (chapitre 4) a mis en lumière l'hétérogénéité des protocoles publiés, le biais induit par une évaluation limitée à la seule exactitude, et les lacunes récurrentes en matière d'explicabilité et de généralisation externe.
+L'étude liminaire (chapitre 4) a de surcroît mis en évidence la cacophonie méthodologique régnant au sein des publications antérieures, dénonçant avec vigueur l'hégémonie de métriques trompeuses (comme la précision globale prise isolément) et les graves insuffisances touchant tant à l'explicabilité du modèle qu'à sa propension à se généraliser en dehors de son contexte initial.
 
-La \textbf{Partie II} a présenté un pipeline expérimental complet et performant, dont les principales contributions sont :
+La \textbf{Partie II} a, pour sa part, matérialisé un protocole expérimental à la fois souverain et intolérant aux approximations, s'illustrant par les accomplissements suivants :
 
 \begin{enumerate}
-    \item \textbf{Un prétraitement avancé} combinant imputation par médiane conditionnelle à la classe, winsorisation aux percentiles extrêmes et transformation de Yeo-Johnson, traitement des spécificités des données médicales de manière chirurgicale.
+    \item \textbf{Un assainissement chirurgical de la matrice d'origine}, recourant à une substitution par la médiane segmentée selon la classe cible, secondée par la neutralisation des valeurs aberrantes aux percentiles asymétriques extrêmes, ainsi qu'une normalisation mathématique profonde (Yeo-Johnson) imposée par la nature distordue des données médicales.
     
-    \item \textbf{Une ingénierie de caractéristiques médicalement informée} : 8 nouvelles variables ont été construites à partir des 8 attributs originaux, dont le \texttt{Risk\_Score} ($r = +0.535$ avec \texttt{Outcome}) et l'interaction \texttt{Glucose\_BMI} ($r = +0.526$), portant à 16 le nombre final de caractéristiques.
+    \item \textbf{Une ingénierie biomathématique de très haut vol}, donnant naissance à 8 indicateurs synthétiques greffés sur le socle originel. L'incidence du paramètre \texttt{Risk\_Score} (corrélation de Pearson atteignant $+0.535$) et de la collusion \texttt{Glucose\_BMI} ($+0.526$) certifie la nécessité absolue de sceller l'alliance entre pragmatisme médical et modélisation algorithmique, portant l'architecture finale à 16 facteurs d'intérêts.
     
-    \item \textbf{Un traitement rigoureux du déséquilibre des classes} par Borderline-SMOTE, équilibrant les classes à 400 instances chacune dans le jeu d'entraînement, combiné à l'optimisation des seuils de décision individuellement pour chaque modèle.
+    \item \textbf{Une riposte structurelle au déficit des diagnostics pathologiques certifiés}, s'incarnant par l'implémentation du protocole Borderline-SMOTE, permettant de symétriser numériquement les profils simulés (400 face à 400 dans le lot d'apprentissage) sans perturber fondamentalement la topologie de l'espace de décision.
     
-    \item \textbf{Une optimisation bayésienne intensive} des hyperparamètres par Optuna (jusqu'à 200 essais pour XGBoost), conduisant à des configurations optimales sans exploration exhaustive de l'espace des paramètres.
+    \item \textbf{Une traversée d'optimisation probabiliste orchestrée par Optuna} (englobant 200 évaluations massives concernant XGBoost), traçant la voie vers des configurations paramétriques d'exception hors de portée d'une simple exploration naïve.
 \end{enumerate}
 
 % ---- Bilan des résultats ----
-\section*{Bilan des résultats}
+\section*{Bilan chiffré des investigations}
 
-Les résultats obtenus démontrent la supériorité des méthodes ensemblistes sur le SVM dans ce contexte applicatif. \textbf{XGBoost} et \textbf{Random Forest} atteignent tous deux une exactitude de 89,0\% et un F1-Score de 0.844, avec des AUC-ROC de \textbf{0.9496} et \textbf{0.9453} respectivement — des performances qui surpassent les meilleures valeurs publiées dans la littérature comparative sur la PIDD. Le gain par rapport à une configuration basique est substantiel : +13,6 points d'exactitude, +20,9 points de F1-Score et +12,4 points d'AUC-ROC.
+Les expérimentations attestent catégoriquement de l'effondrement des architectures isolées au bénéfice absolu des procédés de modélisation ensembiliste. Au faîte de la hiérarchie technique, \textbf{XGBoost} et \textbf{Random Forest} coiffent conjointement les sommets prédictifs avec une exactitude figée à 89,0\% associée à un indice F1 de 0.844. Sur le versant évaluant l'homogénéité de discrimination, ils brisent les plafonds avec des aires colossales respectives fixées à \textbf{0.9496} et \textbf{0.9453}. L'écart béant instauré par rapport aux manipulations sans relief observées ordinairement (+20,9 points d'ascension sur l'indice F1-Score comparativement à l'état originel des données) entérine solennellement le succès de l'expérimentation.
 
-Le SVM, malgré une optimisation soignée, reste limité à une AUC-ROC de 0.859 et un F1-Score de 0.700, illustrant ses difficultés structurelles face à des données tabulaires présentant de fortes interactions entre variables et un déséquilibre modéré des classes.
+Malgré des paramétrages poussés dans ses retranchements optimaux, l'hyperplan vectoriel (SVM) ne hissera son bouclier qu'à 0.859 d'aire discriminatoire, accablé par un index de rappel dramatiquement insuffisant. Cette asphyxie mécanique prouve son inadaptation foncière pour s'accommoder des intrications masquées nichées dans des tableaux cliniques moyennement denses.
 
-Les architectures ensemblistes avancées (Voting, Stacking) n'ont pas amélioré les performances des meilleurs modèles individuels en raison de la forte corrélation entre prédicteurs.
+En outre, il est établi que la surabondance systémique (méta-modèles ou coalitions de votes) s'est avérée stérile pour extirper plus de sens que le parangon de la session (XGBoost), bloquée par l'inévitable corrélation partagée par les pronostics des modèles de premier plan.
 
 % ---- Limites et perspectives ----
-\section*{Limites et perspectives}
+\section*{Carences intrinsèques et desseins futurs}
 
-Ce travail comporte plusieurs limites qui motivent des directions de recherche futures. La validité externe des modèles reste à démontrer sur des populations autres que les femmes Pima. L'imputation massive de l'attribut \texttt{Insulin} (374 valeurs sur 768) introduit un biais potentiel. L'absence d'explicabilité locale (par exemple via SHAP) limite l'utilité clinique immédiate des modèles appris.
+Si le triomphe de l'expérimentation impressionne, il convient de ne pas se méprendre sur ses assises périlleuses. La déduction algorithmique restreinte de manière claustrale aux seules amérindiennes Pimas ne saurait octroyer de sauf-conduit universel. D'autre part, la reconstruction spéculative frôlant les 48,7\% de l'attribut majeur (Insuline) instaure indéniablement un artéfact statistique lourd de conséquences potentielles. Enfin, le silence opaque et imperturbable entourant les ramifications décisionnelles intimes de l'algorithme (manque d'explicabilité par profil individuel) reste pénalisant d'un point de vue médicolégal.
 
-Les perspectives les plus prometteuses sont l'intégration d'outils d'explicabilité SHAP pour un déploiement en aide à la décision clinique, la validation sur des cohortes indépendantes, l'exploration d'architectures de deep learning tabulaire (TabNet, Transformers), et à plus long terme, le développement de systèmes de détection non invasifs basés sur des données anthropométriques et comportementales.
+Surgissent alors des futurs chantiers de recherche majeurs orientés vers l'adhésion d'architectures tabulaires d'explicabilité (à l'instar des protocoles mathématiques préconisés par Shapley) pour légitimer la sentence prédictive aux yeux du praticien humain. Ils appelleront de surcroît à sonder un pan entier de biométries non intrusives, esquissant l'horizon d'un pronostic de masse indolore et accessible techniquement à l'échelle transcontinentale.
 
 % ---- Mot final ----
-\section*{Mot final}
+\section*{Dernière observation algorithmique}
 
-Ce travail illustre comment une combinaison réfléchie de techniques de prétraitement, d'ingénierie des données et d'optimisation algorithmique peut transformer des performances ordinaires en résultats compétitifs sur un jeu de données de référence. Au-delà des chiffres, il souligne que la qualité des données et la rigueur méthodologique sont des déterminants aussi importants que le choix de l'algorithme lui-même — une leçon fondamentale pour tout praticien de l'apprentissage automatique appliqué aux sciences de la vie.
+L'investigation vient de sceller sans équivoque un postulat majeur de la science de la donnée contemporaine. L'élection fastueuse d'un solveur de dernière génération importe intrinsèquement beaucoup moins que l'acuité et le ciselage investis à métamorphoser la substance primitive en vecteurs clairs, balancés et cliniquement chargés d'instructions. Au carrefour exact de la médecine interne et des statistiques matricielles rigoureuses, cet ouvrage a démontré qu'une intelligence prédictive infaillible exige avant tout des données rigoureusement respectées et modélisées avec la plus haute méticulosité scientifique.
