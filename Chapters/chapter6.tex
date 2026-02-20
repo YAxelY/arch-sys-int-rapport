@@ -1,1 +1,96 @@
 \chapter{ANALYSE DES RESULTATS, DISCUSSION ET PERSPECTIVES}
+\section{Analyse des Résultats}
+
+\subsection{Évaluation des Modèles Individuels (SVM, Random Forest, XGBoost)}
+Dans cette première phase d'analyse, nous comparons les performances des trois modèles d'apprentissage automatique de base (SVM, Random Forest et XGBoost) sur notre jeu de données de détection du diabète. Les métriques évaluées comprennent l'Accuracy (exactitude), la Précision, le Recall (sensibilité), le F1-Score et l'aire sous la courbe ROC (ROC-AUC).
+
+D'après les résultats expérimentaux obtenus, le modèle \textbf{SVM avec noyau RBF} présente les performances les plus modestes, avec une Accuracy de 0.8052 et un F1-Score de 0.7000. Son Recall de 0.6481 indique une difficulté à identifier correctement tous les patients diabétiques. 
+
+En revanche, les modèles basés sur les arbres de décision offrent des résultats nettement supérieurs. Le \textbf{Random Forest} atteint une Accuracy de 0.8896 et un F1-Score de 0.8440, montrant une excellente capacité de généralisation. Le modèle \textbf{XGBoost} se distingue particulièrement avec des performances similaires en Accuracy (0.8896) mais un F1-Score légèrement supérieur (0.8496) et un Recall optimal de 0.8889, prouvant sa robustesse face à des données complexes et déséquilibrées.
+
+\subsection{Impact des Modèles Avancés (Voting Ensemble et Stacking)}
+Afin de repousser les limites des modèles individuels, plusieurs architectures d'apprentissage ensembliste avancées ont été testées : un \textit{Soft Voting Ensemble}, un \textit{Stacking avec Régression Logistique} et un \textit{Stacking (v2) avec XGBoost} comme méta-apprenant.
+
+Le modèle \textit{Stacking v2}, qui permet au méta-apprenant d'accéder aux caractéristiques originales (passthrough), obtient d'excellents résultats avec un ROC-AUC de 0.9461. Cependant, son F1-Score (0.8077) et son Recall (0.7778) restent en deçà de ceux du modèle XGBoost individuel. Le \textit{Soft Voting Ensemble} présente quant à lui une approche équilibrée mais n'améliore pas significativement les performances par rapport aux meilleurs modèles de base (Accuracy de 0.8701).
+
+Ces résultats démontrent que, bien que les méthodes de Stacking et de Voting soient structurellement plus complexes et théoriquement plus performantes, elles ne surpassent pas nécessairement un algorithme XGBoost rigoureusement optimisé, notamment grâce à notre recherche fine d'hyperparamètres via Optuna (plus de 200 essais).
+
+\subsection{Analyse Comparative et Sélection du Meilleur Modèle}
+Le tableau ci-dessous synthétise les performances des différents modèles évalués :
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Modèle} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{ROC-AUC} & \textbf{CV AUC} \\
+\midrule
+XGBoost & 0.8896 & 0.8136 & 0.8889 & 0.8496 & 0.9517 & 0.9486 \\
+Stacking v2 & 0.8701 & 0.8400 & 0.7778 & 0.8077 & 0.9461 & 0.9455 \\
+Random Forest & 0.8896 & 0.8364 & 0.8519 & 0.8440 & 0.9453 & 0.9378 \\
+Stacking (LR) & 0.8766 & 0.8302 & 0.8148 & 0.8224 & 0.9317 & 0.9439 \\
+Voting Ensemble & 0.8701 & 0.7931 & 0.8519 & 0.8214 & 0.9337 & 0.9384 \\
+SVM (RBF) & 0.8052 & 0.7609 & 0.6481 & 0.7000 & 0.8589 & 0.8714 \\
+\bottomrule
+\end{tabular}
+\caption{Comparaison des performances des modèles sur le jeu de test}
+\label{tab:comparaison_modeles}
+\end{table}
+
+À la lumière de ce tableau, \textbf{XGBoost} est sélectionné comme le meilleur modèle global. Il excelle sur la majorité des métriques, avec le ROC-AUC le plus élevé (0.9517) et une excellente stabilité en validation croisée (0.9486). Avec une Accuracy frôlant les 90\%, il représente le compromis idéal entre précision de prédiction et sensibilité au dépistage.
+
+\section{Discussion}
+
+\subsection{Impact Décisif du Prétraitement et de l'Ingénierie des Données}
+Une part majeure du succès de notre modèle réside dans la phase rigoureuse de préparation des données. L'application d'une stratégie d'imputation par classe (médiane) pour corriger les zéros aberrants (ex: taux de glucose ou tension artérielle nuls), combinée à la technique de Winsorization (1er et 99ème percentiles) pour atténuer l'impact des valeurs extrêmes, a considérablement purifié l'espace des descripteurs.
+
+De plus, la distribution initiale des données souffrait d'un asymétrie de classes (500 non diabétiques / 268 diabétiques). L'utilisation de l'algorithme \textbf{Borderline-SMOTE}, couplée à une transformation de puissance (PowerTransformer, méthode Yeo-Johnson), a permis de générer des échantillons synthétiques de haute qualité près des frontières de décision. Par rapport à une approche basique sans ce pipeline avancé, les performances globales ont connu un bond exceptionnel : \textbf{+0.1364} en Accuracy (passant de 0.7532 à 0.8896) et \textbf{+0.2150} en F1-Score.
+
+Il est également intéressant d'analyser l'importance des variables utilisées par les modèles, illustrée en Figure~\ref{fig:feature_importance}. Les caractéristiques cliniques (comme la glycémie, l'âge, le BMI et l'insuline) jouent un rôle prépondérant dans la prise de décision, avec des corrélations fortes mesurées via l'Information Mutuelle.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Chapters/images/feature_importance_mi.png}
+    \caption{Importance relative des caractéristiques selon l'Information Mutuelle}
+    \label{fig:feature_importance_mi}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Chapters/images/feature_importance_rf_xgb.png}
+    \caption{Comparaison de l'importance des caractéristiques (Random Forest vs XGBoost)}
+    \label{fig:feature_importance}
+\end{figure}
+
+\subsection{Interprétation Clinique des Métriques}
+Dans le cadre du diagnostic médical assisté par intelligence artificielle, particulièrement pour une pathologie silencieuse et grave comme le diabète, l'Accuracy globale n'est pas la seule métrique à observer. Il est fondamental de minimiser les \textit{faux négatifs} (un patient malade diagnostiqué à tort comme sain), car un retard de prise en charge peut entraîner de lourdes complications.
+
+C'est pourquoi l'optimisation a fortement ciblé le \textbf{Recall} (sensibilité) et le \textbf{F1-Score}. Selon le rapport de classification final de XGBoost, le modèle atteint un Recall de 0.8889 sur la classe "Diabétique". Cela signifie que l'algorithme identifie correctement près de 89\% des patients réellement atteints de diabète, offrant ainsi un excellent outil de dépistage précoce limitant les risques de non-détection.
+
+La Figure~\ref{fig:confusion_matrix} illustre la matrice de confusion obtenue par les trois meilleurs modèles (XGBoost, Stacking v2, Random Forest) sur l'ensemble de test. Elle met en évidence la capacité de XGBoost à identifier la grande majorité des patients diabétiques (réduisant les faux négatifs à 11.1\%). La performance globale comparative est également confirmée par la Figure~\ref{fig:roc_curve}, où la courbe ROC de XGBoost et des modèles d'ensemble dominent l'espace, résultant en d'excellents scores ROC-AUC (> 0.94).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{Chapters/images/cm_top3.png}
+    \caption{Matrices de Confusion des algorithmes les plus performants}
+    \label{fig:confusion_matrix}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Chapters/images/roc_curves_all.png}
+    \caption{Courbes ROC de l'ensemble des modèles évalués}
+    \label{fig:roc_curve}
+\end{figure}
+
+\subsection{Limites de l'Étude Expérimentale}
+Malgré ces résultats très encourageants, l'étude présente certaines limites inhérentes au jeu de données "Pima Indians Diabetes". D'une part, la taille relativement modeste du dataset (768 individus dont seulement 154 en jeu de test) rend les scores d'évaluation sensibles aux variations d'échantillonnage, bien que la validation croisée stratifiée atténue ce risque. 
+
+D'autre part, la technique de suréchantillonnage Borderline-SMOTE, bien que très efficace, génère des données synthétiques. Cela implique une forte dépendance aux paramètres du SMOTE, et le modèle pourrait potentiellement réagir différemment en condition réelle face à une distribution de patients fondamentalement nouvelle. 
+
+\section{Perspectives}
+
+\subsection{Amélioration Continue du Modèle}
+Plusieurs pistes techniques pourraient être envisagées pour affiner davantage ce système d'aide au diagnostic. L'intégration de réseaux de neurones profonds (Deep Learning, comme les perceptrons multicouches testés en amont) pourrait capturer des interactions non linéaires complexes supplémentaires. De plus, une collecte de données cliniques issues d'hôpitaux locaux, plus vastes et plus diversifiées génétiquement que la population originelle (Pima Indians), serait nécessaire pour valider formellement la généralisation géographique et démographique du modèle de détection.
+
+\subsection{Déploiement et Application Pratique}
+D'un point de vue architectural, l'aboutissement de ce projet ne réside pas uniquement dans l'entraînement d'un modèle performant, mais dans sa capacité à être déployé. La prochaine étape logique consiste à encapsuler ce modèle XGBoost au sein d'une architecture de \textbf{Système Multi-Agents (SMA)} ou d'une API de type microservice. Un agent intelligent "Diagnostic" pourrait alors s'interfacer en temps réel avec le dossier médical numérique des patients, analyser en continu leurs constantes biologiques (glycémie, IMC, tension artérielle) et alerter proactivement le personnel médical en cas de risque élevé, réalisant ainsi l'objectif premier des architectures de systèmes intelligents au service de la santé.
