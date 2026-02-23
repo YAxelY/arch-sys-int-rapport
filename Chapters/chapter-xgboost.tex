@@ -23,7 +23,12 @@ Ce chapitre vise à introduire les principes fondamentaux du gradient boosting, 
 Le principe clé du gradient boosting est l'apprentissage itératif. Contrairement à la construction parallèle des forêts aléatoires, le boosting construit le modèle étape par étape. Chaque nouvel arbre est entraîné non pas sur la variable cible originale, mais sur les erreurs résiduelles des arbres précédents.
 
 Cette méthode peut être vue comme une descente de gradient dans l'espace fonctionnel. Si l'on considère le modèle global comme un point dans l'espace des fonctions possibles, chaque nouvel arbre ajouté représente un pas dans la direction opposée du gradient de la fonction de perte, minimisant ainsi l'erreur globale de manière incrémentale.
-
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Chapters/images/gradient_boosting_residuals.png}
+    \caption{Illustration du principe additif du Gradient Boosting apprenant sur les erreurs résiduelles.}
+    \label{fig:xgb_residuals}
+\end{figure}
 \subsection{Formulation mathématique du gradient boosting}
 L'objectif est de trouver une fonction $F$ qui minimise la perte globale sur un ensemble de $n$ observations :
 \begin{equation}
@@ -53,6 +58,8 @@ Le Gradient Boosting Machine (GBM) traditionnel souffre de certaines limitations
     \item \textbf{Performances limitées sur grandes données :} L'implémentation standard manque d'optimisations systèmes pour passer à l'échelle.
 \end{itemize}
 
+
+
 \section{XGBoost : Innovations Mathématiques}
 XGBoost adresse ces limitations par une formulation mathématique régularisée et une approximation de second ordre.
 
@@ -71,6 +78,13 @@ Chaque terme a une signification précise :
     \item $\lambda$ (lambda) : régularisation L2 sur les poids des feuilles $w_j$, favorisant le lissage (analogue à Ridge).
     \item $\alpha$ (alpha) : régularisation L1 sur les poids, favorisant la parcimonie (analogue à Lasso).
 \end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Chapters/images/xgb_regularization.png}
+    \caption{Impact des paramètres de régularisation L1/L2 sur l'adoucissement des prédictions (Lasso et Ridge) limitant ainsi le surapprentissage.}
+    \label{fig:xgb_reg}
+\end{figure}
 
 \subsection{Approximation de Taylor de second ordre}
 Pour optimiser cette fonction objectif, XGBoost utilise un développement de Taylor de second ordre autour de la prédiction précédente $\hat{y}^{(t-1)}$ :
@@ -124,6 +138,13 @@ Cela permet de décorréler les arbres et d'ajouter une couche supplémentaire d
 \subsection{Early stopping}
 L'entraînement peut être configuré pour s'arrêter prématurément si la performance sur un jeu de validation ne s'améliore pas après un certain nombre d'itérations (\textit{patience}). Cela détermine automatiquement le nombre optimal d'arbres et prévient le surapprentissage tardif.
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{Chapters/images/xgb_early_stopping.png}
+    \caption{Mécanisme d'arrêt prématuré (Early Stopping) stoppant l'apprentissage pour éviter le sur-ajustement.}
+    \label{fig:xgb_early_stopping}
+\end{figure}
+
 \section{Optimisations Systèmes}
 
 \subsection{Parallélisation}
@@ -136,6 +157,13 @@ XGBoost implémente plusieurs techniques pour gérer les données volumineuses :
     \item \textbf{Out-of-core computing :} Optimisation des accès disques pour traiter des données ne tenant pas en mémoire vive.
     \item \textbf{Weighted Quantile Sketch :} Un algorithme d'approximation distribué pour trouver les quantiles sur des données pondérées, facilitant la création d'histogrammes précis.
 \end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Chapters/images/xgb_histogram_split.png}
+    \caption{L'optimisation des histogrammes confinant les données continues ($O(n \log n)$) en classes figées discrètes pour accélérer drastiquement la création des arbres.}
+    \label{fig:xgb_hist}
+\end{figure}
 
 \section{Hyperparamètres Clés}
 
@@ -184,6 +212,13 @@ Résistance au surapprentissage & Très Bonne & Excellente \\
 \caption{Comparaison synthétique : XGBoost vs Random Forest}
 \label{tab:xgb_vs_rf}
 \end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{Chapters/images/xgb_vs_rf_radar.png}
+    \caption{Graphique radar récapitulant les forces comparées de XGBoost par rapport au modèle Random Forest sur différentes dimensions.}
+    \label{fig:xgb_vs_rf_radar}
+\end{figure}
 
 \section{Conclusion}
 XGBoost représente l'état de l'art du gradient boosting grâce à ses trois piliers : la précision (via l'optimisation de second ordre régularisée), l'efficacité (parallélisation et gestion mémoire), et la praticité (fonctionnalités natives). C'est le choix optimal lorsque la performance prédictive est le critère critique, surpassant souvent les méthodes classiques malgré une complexité de mise en œuvre plus élevée. Bien que des successeurs comme LightGBM et CatBoost existent, XGBoost demeure une référence incontournable.

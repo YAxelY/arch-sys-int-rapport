@@ -1,0 +1,944 @@
+\documentclass[11pt]{beamer}
+\usetheme{Madrid}
+\usefonttheme{serif}
+
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric}
+
+\DeclareMathOperator{\sen}{sen}
+\DeclareMathOperator{\tg}{tg}
+
+\setbeamertemplate{caption}[numbered]
+
+% Après (titre court dans le footer) :
+\author[Hamed, Vergez, Aubin, Senge]{}
+\title[SVM, RF \& XGBoost]{\small SUPPORT VECTOR MACHINES, RANDOM FORESTS \& EXTREME GRADIENT BOOSTING}
+%\institute[Univ. Dschang]{}
+\date{\today}
+\newcommand{\email}{email}
+\setbeamertemplate{navigation symbols}{} 
+\date{\today} 
+
+\bibliographystyle{apalike}
+
+\begin{document}
+
+% ─────────────────────────────────────────────
+\begin{frame}[plain]
+    \begin{figure}
+        \vspace{-0.5cm}
+        \centering      
+        \includegraphics[width=.8\textwidth]{./imagens/univ-header.png}
+    \end{figure}
+    \vspace{-1.2cm}
+    \author{}
+    \date{}
+    \titlepage
+    \vspace{-2.5cm}
+    \centering
+    {
+        \scriptsize
+        Niveau : {\bfseries MASTER 2}\\[1mm]
+    Option : {\bfseries Intelligence Artificielle}\\[3mm]
+        Sous la supervision de :\\[1mm]
+        {\bfseries  Pr.KENGNE TCHENDJI Vianney} \\
+        \textit{Maître de Conférences, Université de Dschang} \\[1.5mm]
+        {\bfseries Année Académique : 2025 - 2026}
+    }  
+\end{frame}
+
+\begin{frame}{Membres du groupe 3}
+    \begin{table}
+        \centering
+        \begin{tabular}{|l|l|}
+            \toprule
+            \textbf{Nom} & \textbf{Matricule} \\
+            \midrule
+            LEKANE KENFACK VERGEZ          & CM-UDS-21SCI0569 \\
+            \hline
+            MBOUMEU YOUMBI AXEL AUBIN      & CM-UDS-21SCI0589 \\
+            \hline
+            MOUNCHIKPOU MEFIRE HAMED KAMAL & CM-UDS-21SCI0601 \\
+            \hline
+            NJIH ASONYU SENGE              & CM-UDS-21SCI0625 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\begin{frame}{Sommaire}
+\tableofcontents[sectionstyle=show,subsectionstyle=show/shaded/hide,subsubsectionstyle=show/shaded/hide]
+\end{frame}
+
+\AtBeginSection[]{
+	\begin{frame}{Sommaire}
+        \tableofcontents[sectionstyle=show/shaded,subsectionstyle=show/shaded/hide,subsubsectionstyle=show/shaded/hide]
+	\end{frame}
+}
+
+\section{Introduction}
+% ─────────────────────────────────────────────
+\begin{frame}{Introduction}
+Dans le domaine du machine learning supervisé, plusieurs algorithmes se distinguent par leur efficacité pour la classification et la régression. Parmi eux, les \textbf{SVM}, les \textbf{Random Forests} et \textbf{XGBoost} occupent une place centrale grâce à leur robustesse et leurs performances élevées sur des données complexes.
+
+\medskip
+Ces modèles reposent sur des approches différentes :
+\begin{itemize}
+    \item Les \textbf{SVM} maximisent la marge de séparation entre les classes ;
+    \item Les \textbf{Random Forests} combinent plusieurs arbres de décision pour améliorer la généralisation ;
+    \item \textbf{XGBoost} utilise le boosting pour corriger progressivement les erreurs.
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Concepts clés : Apprentissage Automatique}
+\begin{itemize}
+    \item \textbf{Apprentissage automatique (Machine Learning)} : domaine de l'IA permettant aux systèmes d'apprendre à partir des données sans être explicitement programmés.
+    
+    \medskip
+    \item \textbf{Classification} : tâche supervisée consistant à prédire une étiquette discrète (ex : spam / non-spam, malade / sain).
+    
+    \medskip
+    \item \textbf{Régression} : tâche supervisée visant à prédire une valeur continue (ex : prix d'une maison, température).
+\end{itemize}
+\end{frame}
+
+% ──────────────────────────────────────────
+
+\section{SVM}
+
+% ─── Slide 1 : Introduction ───────────────────────────────────────────────────
+\begin{frame}{Support Vector Machines (SVM)}
+    \small
+    \begin{block}{Définition}
+    Algorithme d'apprentissage supervisé introduit par \textbf{Vapnik et al. (1992)} pour la \textbf{classification} et la \textbf{régression}.
+    \end{block}
+    
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+    \textbf{Idée centrale :}
+    \begin{itemize}\scriptsize
+        \item Trouver l'\textbf{hyperplan optimal} séparant les classes
+        \item Maximiser la \textbf{marge} entre les deux classes
+        \item Fondé sur l'\textbf{optimisation convexe}
+    \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \textbf{Points forts :}
+    \begin{itemize}\scriptsize
+        \item Robuste en grande dimension
+        \item Résistant au surapprentissage
+        \item Applicable aux données non linéaires
+    \end{itemize}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Support Vector Machines (SVM)}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.5\linewidth]{imagens/image.png}
+        \caption{ L’objet à classer (le triangle noir) est-il un rond rouge ou bien un carré bleu ?}
+        \label{fig:svm_placeholder_1}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Support Vector Machines (SVM)}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.5\linewidth]{imagens/image2.png}
+        \caption{ Notre SVM, muni des donn’ees d’entraînement (les carr’es bleus et les ronds rouges d’ejà indiqu’es comme tels par l’utilisateur), a tranch’e : le triangle noir est en fait un carre bleu}
+        \label{fig:svm_placeholder_2}
+    \end{figure}
+\end{frame}
+
+
+% ─── Slide 2 : Formalisme ─────────────────────────────────────────────────────
+\begin{frame}{Formalisme des SVM}
+    \small
+    Pour $x \in \mathbb{R}^n$, le SVM cherche un \textbf{hyperplan affine} :
+    \[
+    h(x) = \mathbf{w}^\top x + b
+    \]
+    \begin{itemize}\scriptsize
+        \item $\mathbf{w}$ : vecteur de poids \quad $b$ : biais
+        \item Classification : $y = +1$ si $h(x) \geq 0$, $\quad y = -1$ sinon
+    \end{itemize}
+    \vspace{7pt}
+    \textbf{Contraintes d'apprentissage}{\scriptsize
+    \[
+    y_i\,(\langle \mathbf{w}, x_i \rangle + b) \geq 1 \quad \forall i
+    \]}
+    \vspace{7pt}
+    \textbf{Objectif : maximiser la marge}{\scriptsize
+    \[
+    \text{Marge} = \frac{2}{\|\mathbf{w}\|} \quad \Rightarrow \quad \text{minimiser } \|\mathbf{w}\|
+    \]}
+\end{frame}
+
+% ─── Slide 3 : Maximisation de la marge ───────────────────────────────────────
+\begin{frame}{Maximisation de la marge}
+    \small
+    \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+    \begin{itemize}\scriptsize
+        \item $H$ : hyperplan séparateur
+        \item $H^+$ : hyperplan longeant les positifs
+        \item $H^-$ : hyperplan longeant les négatifs
+        \item La \textbf{marge} = distance entre $H^+$ et $H^-$
+    \end{itemize}
+    \vspace{0.3cm}
+    \begin{alertblock}{Résultat clé}\scriptsize
+    \[
+    \text{Largeur de la marge} = \frac{2}{\|\mathbf{w}\|}
+    \]
+    $\Rightarrow$ maximiser la marge $=$ minimiser $\|\mathbf{w}\|$
+    \end{alertblock}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+    \begin{block}{Distance point-hyperplan}\scriptsize
+    \[
+    d = \frac{|\mathbf{w}^\top x_k + b|}{\|\mathbf{w}\|}
+    \]
+    Les \textbf{vecteurs de support} sont les points les plus proches de $H$.
+    \end{block}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Maximisation de la marge}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.4\linewidth]{imagens/Capture d’écran du 2026-01-21 14-11-33.png}
+        \caption{Schéma illustratif : groupe H+ et H-}
+        \label{fig:svm_placeholder_3}
+    \end{figure}
+\end{frame}
+
+% ─── Slide 9 : Formulation Lagrangienne ───────────────────────────────────────
+\begin{frame}{Formulation Lagrangienne des SVM}
+    \small
+    \textbf{Problème primal :} minimiser $\frac{1}{2}\|\mathbf{w}\|^2$ sous contraintes $y_i(\mathbf{w}^\top x_i + b) \geq 1$
+
+    \vspace{6pt}
+    On introduit les \textbf{multiplicateurs de Lagrange} $\alpha_i \geq 0$ :
+    \[
+    \mathcal{L}(\mathbf{w}, b, \alpha) = \frac{1}{2}\|\mathbf{w}\|^2 - \sum_{i=1}^{n} \alpha_i \left[ y_i(\mathbf{w}^\top x_i + b) - 1 \right]
+    \]
+
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \textbf{Conditions KKT :}\scriptsize
+        \[
+        \mathbf{w} = \sum_{i} \alpha_i y_i x_i, \quad \sum_{i} \alpha_i y_i = 0
+        \]
+        $\Rightarrow$ \textbf{Problème dual} en $\alpha$ uniquement
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{alertblock}{Propriété clé}\scriptsize
+            Seuls les points avec $\alpha_i > 0$ contribuent à $\mathbf{w}$ : ce sont les \textbf{vecteurs de support}.\\[3pt]
+            La fonction de décision devient :
+            \[
+            h(x) = \sum_{i} \alpha_i y_i K(x_i, x) + b
+            \]
+        \end{alertblock}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+% ─── Slide 4 : SVM non linéaires ──────────────────────────────────────────────
+\begin{frame}{SVM non linéaires : Plongée en dimension supérieure}
+    \small
+    \textbf{Problème :} Certaines données \textbf{ne sont pas linéairement séparables} dans l'espace d'origine (ex: cercles concentriques, problème XOR).
+    
+    \vspace{7pt}
+    \textbf{Solution :} Projeter les données dans un espace de \textbf{dimension supérieure} $E'$ via une fonction $\phi$ :
+    \[
+    \phi : E \rightarrow E', \quad x \mapsto \phi(x)
+    \]
+    
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+    \begin{itemize}\scriptsize
+        \item Dans $E'$, les données deviennent linéairement séparables
+        \item Le SVM trouve un hyperplan dans $E'$
+        \item Ce plan correspond à une \textbf{frontière non linéaire} dans $E$
+    \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \begin{alertblock}{Problème pratique}\scriptsize
+    Plus la dimension de $E'$ est grande, plus les calculs sont \textbf{coûteux}.\\
+    $\Rightarrow$ Le \textbf{Kernel Trick} résout ce problème !
+    \end{alertblock}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{SVM non linéaires : Plongée en dimension supérieure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.5\linewidth]{imagens/donnees_non_lineaires.png}
+        \caption{Données d’entraînement non linéairement séparables}
+        \label{fig:svm_placeholder_4}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{SVM non linéaires : Plongée en dimension supérieure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=\linewidth]{imagens/donnees_droite.png}
+        \caption{Illustration : données sur une droite}
+        \label{fig:svm_placeholder_5}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{SVM non linéaires : Plongée en dimension supérieure}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.5\linewidth]{imagens/projection_r2.png}
+        \caption{Données d’entraînement après projection dans l’espace R2}
+        \label{fig:svm_placeholder_6}
+    \end{figure}
+\end{frame}
+
+% ─── Slide 5 : Kernel Trick ───────────────────────────────────────────────────
+\begin{frame}{L'Astuce du Noyau (Kernel Trick)}
+    \small
+    \textbf{Idée centrale : } 
+    Les algorithmes n'ont besoin que des \textbf{produits scalaires} $\phi(x_i)^\top \phi(x_j)$.\\
+    On définit une \textbf{fonction noyau} : $K(x, x') = \phi(x)^\top \phi(x')$
+    
+    \vspace{8pt}
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+    \textbf{Principaux noyaux :}
+    \begin{itemize}\scriptsize
+        \item \textbf{Polynomial :} $K = (\alpha\, x^\top x' + \lambda)^d$
+        \item \textbf{Gaussien (RBF) :} $K = \exp\!\left(-\frac{\|x-x'\|^2}{2\sigma^2}\right)$
+        \item \textbf{Laplacien :} $K = \exp\!\left(-\frac{\|x-x'\|}{\sigma}\right)$
+        \item \textbf{Rationnel quadratique}
+    \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \begin{alertblock}{Avantage}\scriptsize
+    Calcul en $\mathcal{O}(n)$ au lieu de $\mathcal{O}(n^2)$ pour le produit dans $E'$.\\[4pt]
+    Pas besoin de connaître $E'$ ni $\phi$ explicitement !
+    \end{alertblock}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+% ─── Slide 7 : Types de noyaux ────────────────────────────────────────────────
+\begin{frame}{Types de noyaux}
+    \small
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Noyau} & \textbf{Formule} & \textbf{Usage} \\
+        \hline
+        Linéaire & $x^\top x'$ & Données séparables \\
+        \hline
+        Polynomial & $(\alpha\, x^\top x' + \lambda)^d$ & Écriture, NLP \\
+        \hline
+        Gaussien (RBF) & $\exp\!\left(-\frac{\|x-x'\|^2}{2\sigma^2}\right)$ & Usage général \\
+        \hline
+        Laplacien & $\exp\!\left(-\frac{\|x-x'\|}{\sigma}\right)$ & Bio-informatique \\
+        \hline
+        Rat. Quadratique & $1 - \frac{\|x-x'\|^2}{\|x-x'\|^2 + \sigma}$ & Recommandation \\
+        \hline
+    \end{tabular}
+
+    \vspace{6pt}
+    \begin{alertblock}{Condition de Mercer}\scriptsize
+        Une fonction $K$ est un noyau valide si et seulement si elle est \textbf{continue, symétrique et semi-définie positive} :
+        $\displaystyle\sum_{i,j} c_i c_j K(x_i, x_j) \geq 0$
+    \end{alertblock}
+\end{frame}
+
+% ─── Slide 8 : Hyperparamètres ────────────────────────────────────────────────
+\begin{frame}{Hyperparamètres clés des SVM}
+    \small
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+        \textbf{Paramètre $C$ (régularisation) \\}{\scriptsize
+            Contrôle le \textbf{compromis biais-variance} :
+            \begin{itemize}
+                \item $C$ grand $\Rightarrow$ marge étroite, peu d'erreurs tolérées $\Rightarrow$ surapprentissage
+                \item $C$ petit $\Rightarrow$ marge large, plus d'erreurs tolérées $\Rightarrow$ sous-apprentissage
+            \end{itemize}}
+            
+        \vspace{4pt}
+        \textbf{Paramètre $\sigma$ / $\gamma$ (noyau RBF) \\}{\scriptsize
+            Contrôle la \textbf{portée d'influence} de chaque point :
+            \begin{itemize}
+                \item $\sigma$ petit $\Rightarrow$ frontière très locale
+                \item $\sigma$ grand $\Rightarrow$ frontière lissée
+            \end{itemize}}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \textbf{Paramètre $d$ (noyau polynomial) \\}{\scriptsize
+            Degré du polynôme :\\
+            plus $d$ est grand, plus la frontière est complexe.}
+            
+        \vspace{4pt}
+        \begin{alertblock}{Stratégie de réglage}\scriptsize
+            Utiliser la \textbf{validation croisée} (grid search) pour trouver la combinaison $(C, \sigma)$ optimale.\\[3pt]
+            Mauvais choix $\Rightarrow$ dégradation sévère des performances.
+        \end{alertblock}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+% ─── Slide 6 : Avantages, Limites & Conclusion ────────────────────────────────
+\begin{frame}{Conclusion SVM}
+    \small
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+    \textbf{Avantages}\scriptsize
+    \begin{itemize}
+        \item Efficace en \textbf{grande dimension}
+        \item Robuste au \textbf{surapprentissage}
+        \item Fonctionne avec peu de données
+        \item Frontières complexes via noyaux
+        \item Optimum \textbf{global} garanti
+    \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \textbf{Limites}\scriptsize
+    \begin{itemize}
+        \item Sensible au choix des \textbf{hyperparamètres} ($C$, $\sigma$)
+        \item Coûteux pour de \textbf{grands jeux} de données
+        \item Choix du noyau non trivial
+        \item Moins interprétable que les arbres
+    \end{itemize}
+    \end{column}
+    \end{columns}
+    
+    \vspace{0.2cm}
+    \begin{alertblock}{Message clé}\scriptsize
+    Les SVM cherchent l'\textbf{hyperplan à marge maximale}. Pour les données non linéaires, le \textbf{Kernel Trick} permet de travailler implicitement dans un espace de grande dimension, sans en calculer explicitement les coordonnées.
+    \end{alertblock}
+\end{frame}
+
+\section{Bagging vs Boosting}
+% ─────────────────────────────────────────────
+% IMAGE SLIDE : Bagging vs Boosting
+\begin{frame}{Concepts clés : Bagging vs Boosting}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\linewidth]{bagging vs boosting.png}
+    \caption{Bagging (parallèle, réduit la variance) vs Boosting (séquentiel, réduit le biais).}
+\end{figure}
+\end{frame}
+
+\section{Random Forests}
+% ─────────────────────────────────────────────
+\begin{frame}{Introduction aux Random Forests}
+\begin{itemize}
+    \item Les arbres de décision simples sont sujets au \textbf{surapprentissage (overfitting)}.
+    
+    \medskip
+    \item Les \textbf{Random Forests} combinent plusieurs arbres pour un modèle plus \textbf{robuste et précis}.
+    
+    \medskip
+    \item Principe clé : la \textit{sagesse des foules} — agréger les prédictions de nombreux arbres entraînés sur des sous-échantillons différents.
+    
+    \medskip
+    \item Contrairement aux SVM et à XGBoost, les Random Forests construisent des arbres \textbf{indépendants et parallèles}.
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Fonctionnement du Random Forest}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{fonctionnement.png}
+    \caption{Principe de fonctionnement du Random Forest}
+\end{figure}
+\end{frame}
+
+
+% ─────────────────────────────────────────────
+% IMAGE SLIDE : Decision Tree
+
+\begin{frame}{Rappel : Arbres de décision}
+\begin{itemize}
+    \item Un \textbf{arbre de décision} est un modèle hiérarchique basé sur une succession de questions binaires (oui/non).
+    \item Il est composé de :
+    \begin{itemize}
+        \item \textbf{Nœuds internes} : décisions sur les variables d'entrée ;
+        \item \textbf{Branches} : résultats possibles des décisions ;
+        \item \textbf{Feuilles} : prédictions finales.
+    \end{itemize}
+    \item Exemple : « Âge > 30 ? », puis « Revenu > 50\,000 ? » pour prédire un achat.
+\end{itemize}
+\end{frame}
+\begin{frame}{Rappel visuel : Arbre de décision}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{decision_tree.png}
+    \caption{Exemple d'arbre de décision pour la prédiction d'un achat.}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Construction récursive et surapprentissage}
+\begin{itemize}
+    \item L'arbre se construit de manière \textbf{récursive} en choisissant à chaque étape la meilleure division.
+    \item Sans contraintes, l'arbre peut \textbf{surapprendre} :
+    \begin{itemize}
+        \item Excellente performance sur les données d'entraînement ;
+        \item Mauvaise généralisation sur de nouvelles données.
+    \end{itemize}
+    \item Les arbres ont \textbf{faible biais} mais \textbf{forte variance} → motivation des Random Forests.
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Algorithme des Random Forests}
+\begin{itemize}
+    \item Deux sources principales de hasard :
+    \begin{itemize}
+        \item L'\textbf{échantillonnage bootstrap} des données ;
+        \item La \textbf{sélection aléatoire des caractéristiques}.
+    \end{itemize}
+    \item Ces mécanismes permettent de construire un ensemble d'arbres \textbf{diversifiés et moins corrélés}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Étape 1 : Échantillonnage Bootstrap}
+\begin{itemize}
+    \item Pour chaque arbre, on génère un échantillon aléatoire \textbf{avec remise}.
+    \item Certaines observations peuvent apparaître plusieurs fois, d'autres peuvent être absentes.
+    \item En moyenne, chaque échantillon contient environ \textbf{63,2\%} d'observations uniques.
+    \item Cela crée des jeux de données légèrement différents pour entraîner chaque arbre.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Étape 2 : Sélection aléatoire des caractéristiques}
+\begin{itemize}
+    \item À chaque nœud, on sélectionne aléatoirement un sous-ensemble de caractéristiques ($m < p$).
+    \item La meilleure division est choisie \textbf{uniquement parmi ces caractéristiques}.
+    \item Objectif : réduire la corrélation entre les arbres et augmenter la \textbf{diversité} du modèle.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Étapes 3 et 4 : Croissance et Agrégation}
+\begin{itemize}
+    \item \textbf{Croissance des arbres} :
+    \begin{itemize}
+        \item Chaque arbre est développé jusqu'à sa profondeur maximale (sans élagage).
+    \end{itemize}
+    
+    \medskip
+    \item \textbf{Agrégation des prédictions} :
+    \begin{itemize}
+        \item Classification : \textbf{vote majoritaire} des arbres ;
+        \item Régression : \textbf{moyenne} des prédictions.
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Hyperparamètre clé : Nombre d'arbres}
+\begin{itemize}
+    \item \textbf{n\_estimators (ntree)} : nombre d'arbres dans la forêt.
+    \item Valeurs typiques : 100 à 1000 arbres.
+    \item Effets :
+    \begin{itemize}
+        \item Plus d'arbres $\rightarrow$ variance réduite et prédictions plus stables ;
+        \item Temps de calcul plus élevé.
+    \end{itemize}
+    \item Les gains deviennent faibles après un certain seuil (plateau de performance).
+    \item Contrairement au boosting, ajouter des arbres ne provoque généralement \textbf{pas de surapprentissage}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Hyperparamètre clé : max\_features}
+\begin{itemize}
+    \item Contrôle le nombre de caractéristiques testées à chaque division.
+    \item Valeurs par défaut :
+    \begin{itemize}
+        \item Classification : $\sqrt{p}$
+        \item Régression : $p/3$
+    \end{itemize}
+    \item Effets :
+    \begin{itemize}
+        \item Valeurs faibles $\rightarrow$ arbres plus diversifiés mais plus faibles ;
+        \item Valeurs élevées $\rightarrow$ arbres plus puissants mais plus corrélés.
+    \end{itemize}
+    \item C'est l'hyperparamètre le \textbf{plus important} à ajuster.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Autres hyperparamètres et stratégie d'ajustement}
+\begin{itemize}
+    \item \textbf{Profondeur des arbres} :
+    \begin{itemize}
+        \item max\_depth, min\_samples\_split, min\_samples\_leaf
+    \end{itemize}
+    
+    \medskip
+    \item \textbf{Taille bootstrap (max\_samples)} :
+    \begin{itemize}
+        \item Fraction des données utilisée pour chaque arbre.
+    \end{itemize}
+    
+    \medskip
+    \item \textbf{Stratégie pratique} :
+    \begin{enumerate}
+        \item Commencer avec les paramètres par défaut ;
+        \item Ajuster d'abord n\_estimators ;
+        \item Ajuster ensuite max\_features (le plus influent) ;
+        \item Utiliser l'erreur OOB pour une évaluation rapide.
+    \end{enumerate}
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+% IMAGE SLIDE : OOB
+\begin{frame}{Estimation de l'erreur Out-of-Bag (OOB) — Illustration}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.92\linewidth]{imagens/oob_bootstrap.png}
+    \caption{Schéma du mécanisme bootstrap et des données OOB par arbre.}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Fonctionnement de l'erreur Out-of-Bag (OOB)}
+\begin{itemize}
+    \item Lors du bootstrap, environ \textbf{36,8\%} des observations ne sont pas utilisées pour entraîner un arbre donné : ce sont les \textbf{échantillons Out-of-Bag (OOB)}.
+    
+    \medskip
+    \item Pour chaque observation :
+    \begin{enumerate}
+        \item Identifier les arbres qui ne l'ont pas vue (arbres OOB).
+        \item Faire la prédiction uniquement avec ces arbres.
+        \item Comparer la prédiction à la vraie valeur.
+    \end{enumerate}
+    
+    \medskip
+    \item L'erreur OOB = moyenne des erreurs sur toutes les observations.
+    
+    \medskip
+    \textbf{Avantage :} validation intégrée sans jeu de test séparé.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Avantages et limites de l'erreur OOB}
+\textbf{Avantages :}
+\begin{itemize}
+    \item Estimation \textbf{non biaisée} de l'erreur de généralisation
+    \item Aucun coût d'entraînement supplémentaire
+    \item Permet de choisir le nombre d'arbres optimal
+\end{itemize}
+
+\medskip
+\textbf{Limites :}
+\begin{itemize}
+    \item Peut être légèrement \textbf{optimiste} comparée à un test indépendant
+    \item Moins fiable sur de \textbf{petits jeux de données}
+\end{itemize}
+
+\medskip
+\textbf{Formule clé :}
+\[
+P(\text{non sélectionnée}) = \left(1 - \frac{1}{n}\right)^n \rightarrow \frac{1}{e} \approx 0{,}368
+\]
+\end{frame}
+
+% ─────────────────────────────────────────────
+% IMAGE SLIDE : Feature Importance
+\begin{frame}{Importance des variables — Illustration}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.90\linewidth]{feature_importance.png}
+    \caption{Importance MDI (Gini) des variables pour la prédiction du prix des maisons.}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Importance des variables : MDI (Gini Importance)}
+\begin{itemize}
+    \item La \textbf{Diminution Moyenne de l'Impureté (MDI)} mesure combien une variable réduit l'impureté des nœuds.
+    
+    \medskip
+    \item Calcul : sommer la réduction d'impureté pondérée sur tous les arbres et normaliser.
+    
+    \medskip
+    \item \textbf{Limites :}
+    \begin{itemize}
+        \item Biais vers les variables à forte cardinalité
+        \item Peut surestimer l'importance si les variables sont corrélées
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Avantages des Random Forests}
+\begin{itemize}
+    \item Robustesse au surapprentissage
+    \item Prétraitement minimal des données
+    \item Gestion des valeurs manquantes
+    \item Capture naturelle des relations non linéaires
+    \item Parallélisation et scalabilité
+    \item Validation intégrée (erreur OOB)
+    \item Importance des variables interprétable
+    \item Bonnes performances avec paramètres par défaut
+    \item Polyvalence (classification, régression, etc.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Limitations des Random Forests}
+\begin{itemize}
+    \item Difficulté d'interprétation
+    \item Besoins élevés en mémoire
+    \item Vitesse de prédiction plus lente
+    \item Moins performant sur données hautement dimensionnelles
+    \item Pas d'extrapolation en régression
+    \item Importance des variables biaisée (MDI)
+    \item Pas toujours le meilleur choix face au boosting ou deep learning
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion Random Forest}
+\begin{itemize}
+    \item Les Random Forests sont des modèles puissants et polyvalents basés sur le \textbf{bagging}
+    \item Robustesse au surapprentissage et gestion des relations non linéaires
+    \item Validation intégrée via l'\textbf{erreur Out-of-Bag (OOB)}
+    \item Adaptées à la classification et à la régression
+    \item Limites : interprétation difficile et coût mémoire élevé
+    \item XGBoost adopte une approche \textbf{boosting} avec construction séquentielle des arbres
+\end{itemize}
+\end{frame}
+
+\section{XGBoost}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Introduction à XGBoost}
+\begin{itemize}
+    \item \textbf{XGBoost} (eXtreme Gradient Boosting) : algorithme avancé de gradient boosting
+    
+    \item Introduit par Chen \& Guestrin (2016)
+    
+    \item Optimisé, scalable et performant pour classification et régression
+    
+    \item Large succès en compétitions Kaggle et applications industrielles
+    \item Utilise le \textbf{boosting} (construction séquentielle) pour réduire le biais
+    \item Alternative performante aux méthodes basées sur le bagging (Random Forest)
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+% IMAGE : Principe du Gradient Boosting — résidus
+
+\input{xgboost-slides/caracteristiques.tex}
+
+\begin{frame}{Principe du Gradient Boosting}
+\begin{itemize}
+    \item Apprentissage \textbf{itératif et séquentiel}
+    \item Chaque nouvel arbre apprend les \textbf{erreurs résiduelles} du modèle précédent
+    \item Construction progressive du modèle global
+    \item Interprétation : descente de gradient dans l'espace des fonctions
+    \item Objectif : minimisation incrémentale de la \textbf{fonction de perte}
+\end{itemize}
+\end{frame}
+\begin{frame}{Principe du Gradient Boosting — Illustration}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.97\linewidth]{imagens/gradient_boosting_residuals.png}
+    \caption{Chaque arbre réduit progressivement les résidus du modèle précédent.}
+\end{figure}
+\end{frame}
+% ─────────────────────────────────────────────
+% IMAGE : Construction séquentielle XGBoost
+\begin{frame}{XGBoost : Construction séquentielle}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\linewidth]{imagens/xgboost_sequential.png}
+    \caption{XGBoost corrige progressivement les erreurs des modèles précédents.}
+\end{figure}
+\end{frame}
+
+\input{xgboost-slides/regression.tex}
+\input{xgboost-slides/classification.tex}
+\input{xgboost-slides/math.tex}
+\input{xgboost-slides/optimisations.tex}
+% ─────────────────────────────────────────────
+
+% ─────────────────────────────────────────────
+% IMAGE : Subsampling stochastique
+\begin{frame}{Subsampling stochastique — Illustration}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.92\linewidth]{imagens/xgb_subsampling.png}
+    \caption{Chaque arbre reçoit un sous-ensemble différent de lignes et colonnes.}
+\end{figure}
+\end{frame}
+
+% ─────────────────────────────────────────────
+% IMAGE : Early Stopping
+\begin{frame}{Early Stopping — Illustration}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.90\linewidth]{imagens/xgb_early_stopping.png}
+    \caption{L'entraînement s'arrête automatiquement au meilleur round de validation.}
+\end{figure}
+\end{frame}
+\begin{frame}{Régularisation XGBoost — Illustration}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.97\linewidth]{imagens/xgb_regularization.png}
+    \caption{La régularisation L1 (\texttt{alpha}) et L2 (\texttt{lambda}) contrôle le surapprentissage.}
+\end{figure}
+\end{frame}
+% ─────────────────────────────────────────────
+\begin{frame}{Limitations du Gradient Boosting classique (GBM)}
+\begin{itemize}
+    \item Absence de régularisation explicite $\rightarrow$ risque élevé de surapprentissage
+    \item Optimisation de premier ordre uniquement (gradient seul)
+    \item Gestion limitée des valeurs manquantes
+    \item Performances réduites sur grandes bases de données
+    \item Manque d'optimisations systèmes pour le passage à l'échelle
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+% IMAGE : Régularisation L1/L2
+
+
+% ─────────────────────────────────────────────
+\begin{frame}{Optimisations systèmes de XGBoost}
+\begin{itemize}
+    \item \textbf{Parallélisation} interne : recherche des meilleurs splits en parallèle
+    \item Structure en colonnes (\textit{Column Block}) pour accélérer les calculs
+
+    \medskip
+
+    \item Scalabilité sur grandes données :
+    \begin{itemize}
+        \item \textbf{Histogram-based splits} (discrétisation en bins)
+        \item \textbf{Out-of-core computing} (gestion des données hors mémoire)
+        \item \textbf{Weighted Quantile Sketch} (approximation efficace des quantiles)
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+
+% ─────────────────────────────────────────────
+\begin{frame}{Hyperparamètres clés de XGBoost}
+\begin{itemize}
+    \item \textbf{Contrôle de la complexité :}
+    \begin{itemize}
+        \item \texttt{max\_depth}, \texttt{min\_child\_weight}, \texttt{gamma}
+    \end{itemize}
+
+    \item \textbf{Régularisation et apprentissage :}
+    \begin{itemize}
+        \item \texttt{lambda} (L2) et \texttt{alpha} (L1)
+        \item \texttt{learning\_rate}
+    \end{itemize}
+
+    \item \textbf{Sampling et autres :}
+    \begin{itemize}
+        \item \texttt{subsample}, \texttt{colsample\_bytree}
+        \item \texttt{scale\_pos\_weight}
+        \item \texttt{n\_estimators} + \texttt{early\_stopping\_rounds}
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+% ─────────────────────────────────────────────
+% IMAGE : Radar chart comparaison
+\begin{frame}{Comparaison XGBoost vs Random Forest — Vue Radar}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.68\linewidth]{imagens/xgb_vs_rf_radar.png}
+    \caption{Comparaison qualitative sur 6 critères clés.}
+\end{figure}
+\end{frame}
+
+% ─────────────────────────────────────────────
+\begin{frame}{Conclusion XGBoost}
+\begin{itemize}
+    \item XGBoost représente l'\textbf{état de l'art} du gradient boosting
+    \item Trois piliers : \textbf{précision}, \textbf{efficacité} et \textbf{praticité}
+    \item Optimisation de second ordre régularisée
+    \item Parallélisation et gestion mémoire optimisées
+    \item Fonctionnalités natives avancées
+    \item Choix privilégié lorsque la \textbf{performance prédictive est critique}
+
+\end{itemize}
+\end{frame}
+
+
+\section{Conclusion Générale}
+
+\begin{frame}{Conclusion Générale}
+    \small
+    \begin{columns}[T]
+    \begin{column}{0.32\textwidth}
+        \textbf{SVM}{\small
+            \begin{itemize}
+                \item Hyperplan à \textbf{marge maximale}
+                \item Kernel Trick pour données non linéaires
+                \item Optimum \textbf{global} garanti
+                \item Sensible aux hyperparamètres ($C$, $\sigma$)
+                \item Coûteux sur grands jeux de données
+            \end{itemize}}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+        \textbf{Random Forest}{\small
+            \begin{itemize}
+                \item \textbf{Bagging} d'arbres indépendants
+                \item Réduction de la \textbf{variance} via agrégation
+                \item Validation intégrée (\textbf{OOB})
+                \item Peu sensible aux hyperparamètres
+                \item Ne peut pas \textbf{extrapoler}
+            \end{itemize}}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+        \textbf{XGBoost}{\small
+            \begin{itemize}
+                \item \textbf{Boosting} séquentiel régularisé
+                \item Approximation de \textbf{Taylor 2\textsuperscript{nd} ordre}
+                \item Gestion native des \textbf{valeurs manquantes}
+                \item Meilleure performance sur données tabulaires
+                \item Réglage plus complexe (+20 hyperparamètres)
+            \end{itemize}}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Cas d'étude : Détection du diabète}
+    \vspace{5pt}
+    \begin{block}{Application : Détection du Diabète (PIDD)}
+        \vspace{6pt}
+        \begin{columns}[T]
+        \begin{column}{0.65\textwidth}
+            Les trois algorithmes ont été évalués sur la \textbf{Pima Indians Diabetes Database} (768 patientes, 8 variables cliniques, 35\% de cas positifs).\\[2pt]
+            \textbf{XGBoost} obtient les meilleures performances globales (AUC-ROC, F1-score).\\
+            \textbf{Random Forest} excelle en robustesse et rappel.\\
+            \textbf{SVM (RBF)} est compétitif mais sensible au déséquilibre des classes.
+        \end{column}
+        \begin{column}{0.32\textwidth}
+            \textbf{Variable clé :}\\[2pt]
+            La \textbf{glycémie plasmatique} est systématiquement le prédicteur le plus informatif dans les trois modèles.
+        \end{column}
+        \end{columns}
+    \end{block}
+\end{frame}
+
+\begin{frame}{The End}
+    \centering
+    \usebeamerfont{frametitle}{\textbf{\Huge Merci pour votre attention !}}\\[1cm]
+    \huge Des questions ?
+\end{frame}
+
+\end{document}

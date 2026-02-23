@@ -1,0 +1,90 @@
+% Section : Fondations Mathématiques de XGBoost
+
+% Frame 1 : Fonction Objectif Globale
+\begin{frame}{XGBoost : Fonction Objectif Globale}
+    \begin{block}{Le Cœur de l'Optimisation}
+        Pour éviter le surapprentissage tout en minimisant l'erreur, XGBoost minimise une fonction objectif composée :
+        \[ \mathcal{L}(\phi) = \sum_{i=1}^{n} L(y_i, \hat{y}_i) + \sum_{k=1}^{K} \Omega(f_k) \]
+    \end{block}
+
+    \begin{itemize}
+        \item \textbf{$\sum L(y_i, \hat{y}_i)$} : Fonction de perte (Training Loss). Elle mesure à quel point le modèle est proche des données réelles.
+        \item \textbf{$\sum \Omega(f_k)$} : Terme de régularisation. Il contrôle la complexité des arbres pour éviter le surapprentissage.
+    \end{itemize}
+\end{frame}
+
+% Frame 2 : Le Terme de Regularisation
+\begin{frame}{XGBoost : Le Terme de Régularisation $\Omega(f)$}
+    \begin{block}{Complexité d'un arbre}
+        La complexité d'un arbre $f$ est définie par sa structure (nombre de feuilles) et ses poids :
+        \[ \Omega(f) = \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T} w_j^2 + \alpha \sum_{j=1}^{T} |w_j| \]
+    \end{block}
+
+    \begin{itemize}
+        \item \textbf{$\gamma$ (Gamma)} : Pénalité sur le nombre de feuilles $T$. Permet l'élagage (Pruning).
+        \item \textbf{$\lambda$ (Lambda)} : Régularisation $L2$ sur les poids $w_j$ (lissage, type Ridge).
+        \item \textbf{$\alpha$ (Alpha)} : Régularisation $L1$ sur les poids $w_j$ (parcimonie, type Lasso).
+    \end{itemize}
+\end{frame}
+
+% Frame 2 : Approximation de Taylor
+\begin{frame}{XGBoost : Approximation de Taylor (2nd Ordre)}
+    \small
+    Pour optimiser n'importe quelle fonction de perte $L$ complexe, on utilise un développement de Taylor autour de la prédiction précédente $\hat{y}_i^{(t-1)}$ :
+    
+    \[ L(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)) \approx L(y_i, \hat{y}_i^{(t-1)}) + g_i f_t(x_i) + \frac{1}{2} h_i f_t^2(x_i) \]
+
+    \begin{block}{Gradient ($g_i$) et Hessienne ($h_i$)}
+        Ces termes calculent la direction et la courbure de l'erreur :
+        \[ g_i = \partial_{\hat{y}_i^{(t-1)}} L(y_i, \hat{y}_i^{(t-1)}) \quad , \quad h_i = \partial_{\hat{y}_i^{(t-1)}}^2 L(y_i, \hat{y}_i^{(t-1)}) \]
+    \end{block}
+
+    \begin{alertblock}{Pourquoi le 2nd ordre ?}
+        L'utilisation de la Hessienne ($h_i$) permet une convergence beaucoup plus rapide que la simple descente de gradient classique utilisée dans les GBM standards.
+    \end{alertblock}
+\end{frame}
+
+% Frame 3 : Poids Optimal des Feuilles
+\begin{frame}{XGBoost : Calcul du Poids Optimal (Output Value)}
+    \small
+    En regroupant les données par feuille $j$, on cherche le poids $w_j$ (ou "Output Value") qui minimise l'objectif local :
+    
+    \[ \tilde{\mathcal{L}}^{(t)} = \sum_{j=1}^{T} \left[ \left( \sum_{i \in I_j} g_i \right) w_j + \frac{1}{2} \left( \sum_{i \in I_j} h_i + \lambda \right) w_j^2 \right] \]
+
+    \begin{block}{Solution Analytique}
+        En dérivant cette équation (qui est une parabole) par rapport à $w_j$ et en l'égalant à zéro, on trouve le minimum exact :
+        \[ w_j^* = - \frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda} \]
+    \end{block}
+
+\end{frame}
+
+% Frame 4 : Lien avec Regression et Classification
+\begin{frame}{XGBoost : Application de la Formule Optimale}
+    \begin{block}{1. Cas de la Régression (Erreur Carrée)}
+        \small
+        Formule de perte : $\displaystyle L(y_i, \hat{y}_i) = \frac{1}{2}(y_i - \hat{y}_i)^2$
+        \begin{itemize}
+            \item Gradient $g_i = \frac{\partial L}{\partial \hat{y}_i} = -(y_i - \hat{y}_i) = -r_i$ (l'opposé du résidu).
+            \item Hessienne $h_i = \frac{\partial^2 L}{\partial \hat{y}_i^2} = 1$ (constante).
+            \item Somme des Hessiennes $\sum h_i = \sum 1 = N$.
+        \end{itemize}
+        \textbf{Valeur Optimale :} $\displaystyle w_j^* = \frac{\sum r_i}{N + \lambda}$
+    \end{block}
+    
+    \vspace{0.1cm}
+
+\end{frame}
+
+% Frame 5 : Classification (Log-Loss)
+\begin{frame}{XGBoost : Application à la Classification}
+    \begin{block}{2. Cas de la Classification (Log-Loss)}
+        \small
+        Formule : $\displaystyle L(y_i, \hat{y}_i) = -[y_i \ln(\hat{y}_i) + (1-y_i) \ln(1-\hat{y}_i)]$
+        \begin{itemize}
+            \item Gradient $g_i = \dots = -(y_i - \hat{y}_i) = -r_i$.
+            \item Hessienne $h_i = \dots = \hat{y}_i(1-\hat{y}_i)$. 
+            \item Cette Hessienne correspond exactement au \textbf{Cover} !
+        \end{itemize}
+        \textbf{Valeur Optimale :} $\displaystyle w_j^* = \frac{\sum r_i}{\sum \text{Cover}_i + \lambda}$
+    \end{block}
+\end{frame}
