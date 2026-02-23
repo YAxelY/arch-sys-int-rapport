@@ -16,6 +16,7 @@
   {\fontsize{64}{72}\selectfont\thechapter}
   {0pt}
   {\huge\centering}
+\titlespacing*{\chapter}{0pt}{0pt}{64pt}
 \usepackage{tocloft} % For customizing the table of contents
 \usepackage{hyperref} % For adding hyperlinks
 \usepackage{natbib}
@@ -62,15 +63,18 @@
 
 
 \newpage
-\addcontentsline{toc}{chapter}{Table des matières}
+\renewcommand{\contentsname}{TABLE DES MATIÈRES}
+\addcontentsline{toc}{chapter}{TABLE DES MATIÈRES}
 \tabledematieres %Créer la table de matières
 
 \newpage
-\addcontentsline{toc}{chapter}{Liste des figures}
+\renewcommand{\listfigurename}{LISTE DES FIGURES}
+\addcontentsline{toc}{chapter}{LISTE DES FIGURES}
 \listoffigures
 
 \newpage
-\addcontentsline{toc}{chapter}{Liste des tableaux}
+\renewcommand{\listtablename}{LISTE DES TABLEAUX}
+\addcontentsline{toc}{chapter}{LISTE DES TABLEAUX}
 \listoftables
 
 \include{Chapters/liste-abbreviations}
@@ -93,9 +97,10 @@
 \include{Chapters/chapter1}
 \include{Chapters/chapter2}
 \include{Chapters/chapter-xgboost}
-\include{Chapters/chapter4}
+
 
 \part{ÉTUDE EXPÉRIMENTALE ET APPLICATION AU CAS DE LA DETECTION DU DIABETE}
+\include{Chapters/chapter4}
 \include{Chapters/chapter5}
 \include{Chapters/chapter6}
 
@@ -109,12 +114,11 @@
 \newpage
 \addcontentsline{toc}{chapter}{BIBLIOGRAPHIE}
 \renewcommand{\bibsection}{\chapter*{BIBLIOGRAPHIE}} % custom title
+\markboth{BIBLIOGRAPHIE}{BIBLIOGRAPHIE}
 \bibliographystyle{apalike}
 \bibliography{refs}
 
-\newpage
-\chapter*{ANNEXES}
-\addcontentsline{toc}{chapter}{ANNEXES}
-% add your sections here of each annexe
+
+\include{Chapters/annexe}
 
 \end{document}

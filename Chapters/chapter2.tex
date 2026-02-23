@@ -52,13 +52,22 @@ Cette opération d’agrégation permet de réduire significativement la varianc
     \caption{Fonctionnement du Random Forest}
     \label{fig:chap2_fig1}
 \end{figure}
+
+
 \section{Rappel sur les arbres de décision}
 
 Avant d’approfondir l’étude des forêts aléatoires, il est utile de rappeler le fonctionnement des arbres de décision individuels, puisqu’ils constituent les briques élémentaires de toute forêt.
 
 Un arbre de décision est un modèle hiérarchique qui effectue des prédictions en posant une succession de questions binaires (oui/non) sur les variables d’entrée. Il est composé de nœuds internes (points de décision), de branches (réponses possibles) et de nœuds feuilles (prédictions finales). Par exemple, prédire si une personne achètera un produit peut impliquer des questions telles que « \emph{Âge > 30 ?} », suivies de « \emph{Revenu > 50\,000 \$ ?} », et ainsi de suite.
 
-La construction d’un arbre de décision repose sur l’algorithme CART (\emph{Classification and Regression Trees}). En partant de l’ensemble des données d’apprentissage au niveau du nœud racine, l’algorithme divise récursivement les données en fonction des valeurs des caractéristiques qui séparent le mieux la variable cible. La question clé est alors : comment mesurer ce « meilleur » découpage ?
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/decision_tree.jpeg}
+    \caption{Exemple d'arbre de décision : prédiction d'un achat selon l'âge et le revenu}
+    \label{fig:chap2_fig2}
+\end{figure}
+
+La construction d’un arbre de décision repose sur les algorithmes ID3, C4.5 et CART (\emph{Classification and Regression Trees}). En partant de l’ensemble des données d’apprentissage au niveau du nœud racine, l’algorithme divise récursivement les données en fonction des valeurs des caractéristiques qui séparent le mieux la variable cible. La question clé est alors : comment mesurer ce « meilleur » découpage ?
 
 \subsection{Critères de séparation}
 
@@ -97,6 +106,30 @@ Les arbres de décision individuels sont donc considérés comme des modèles à
 \text{Entropie} = - \sum p_i \log_2 p_i, \quad
 \text{MSE} = \frac{1}{n} \sum (y_i - \bar{y})^2
 \]
+
+\subsection{Exemple d'application: Prédire si une personne aime le boisson ICE}
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf1.png}
+    \caption{Exemple illustratif : Prédire si une personne aime la ICE (1)}
+    \label{fig:chap2_fig2}
+\end{figure}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf2.png}
+    \caption{Exemple illustratif : Prédire si une personne aime la ICE (2)}
+    \label{fig:chap2_fig2}
+\end{figure}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf3.png}
+    \caption{Exemple illustratif : Prédire si une personne aime la ICE (3)}
+    \label{fig:chap2_fig2}
+\end{figure}
+
+
 \section{Algorithme des forêts aléatoires}
 
 Nous arrivons maintenant au cœur du fonctionnement des forêts aléatoires. L’algorithme introduit deux sources clés de hasard qui le rendent plus puissant qu’un simple \emph{bagging} d’arbres de décision.
@@ -115,11 +148,32 @@ Ce processus est répété à chaque nœud de l’arbre, avec un nouveau sous-en
 
 Cette source de hasard est cruciale : elle permet de décorréler les arbres entre eux, évitant qu’ils ne commettent tous les mêmes erreurs. Si une caractéristique est particulièrement dominante, l’absence de sélection aléatoire conduirait la majorité des arbres à l’utiliser dès la première division, rendant les arbres fortement corrélés. En imposant l’exploration de caractéristiques différentes, on introduit de la diversité au sein de l’ensemble.
 
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf4.png}
+    \caption{Tirage avec remise : chaque arbre reçoit un sample différent (63,2\% unique)}
+    \label{fig:chap2_fig3}
+\end{figure}
+
 \subsection{Étape 3 : Croissance des arbres}
 
 Chaque arbre est développé jusqu’à sa profondeur maximale, sans élagage (\emph{pruning}). Contrairement à la construction d’un arbre de décision unique — où l’on applique souvent des critères d’arrêt anticipés ou des techniques d’élagage pour éviter le surapprentissage — les forêts aléatoires autorisent chaque arbre à surapprendre complètement son échantillon bootstrap.
 
 Ce choix peut sembler contre-intuitif, mais il repose sur un principe fondamental : c’est l’agrégation des prédictions de nombreux arbres fortement variables qui permet de lisser le surapprentissage individuel et d’améliorer la généralisation globale.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf5.png}
+    \caption{Un forêt aléatoire ayant 6 arbres}
+    \label{fig:chap2_fig3}
+\end{figure}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf_aggregation.jpeg}
+    \caption{Gauche : vote majoritaire pour la classification. Droite : moyenne pour la régression}
+    \label{fig:chap2_fig3}
+\end{figure}
 
 \subsection{Étape 4 : Agrégation des prédictions}
 
@@ -138,10 +192,10 @@ D’un point de vue mathématique :
 \hat{y} = \frac{1}{K} \sum_{k=1}^{K} T_k(x) \quad \text{(régression)}
 \]
 où $T_k(x)$ représente la prédiction du $k$-ième arbre pour une observation $x$.
-\subsection{Algorithm Pseudocode}
+\subsection{Algorithme Pseudocode}
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.7\linewidth]{logos/code.png}
+    \includegraphics[width=\linewidth]{logos/code.png}
     \caption{Random Forest}
     \label{fig:chap2_fig2}
 \end{figure}
@@ -152,10 +206,12 @@ Cette combinaison élégante de l’échantillonnage bootstrap et de la sélecti
 \textbf{Idée clé :} les deux sources de hasard l’échantillonnage bootstrap et la sélection aléatoire des caractéristiques génèrent des arbres diversifiés dont les erreurs individuelles tendent à s’annuler lors de l’agrégation, conduisant à de meilleures performances de généralisation.
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.7\linewidth]{logos/bagging vs boosting.png}
+    \includegraphics[width=\linewidth]{logos/bagging vs boosting.png}
     \caption{Bagging vs Boosting }
     \label{fig:chap2_fig3}
 \end{figure}
+
+
 \section{Hyperparamètres clés et leurs effets}
 
 La compréhension des hyperparamètres des forêts aléatoires est essentielle pour obtenir des performances optimales. Bien que les forêts aléatoires donnent généralement de bons résultats avec les paramètres par défaut, un ajustement fin de ces hyperparamètres peut améliorer significativement les performances.
@@ -225,6 +281,8 @@ La principale force des forêts aléatoires réside dans leur faible sensibilit�
 \medskip
 \noindent
 \textbf{Paramètre clé :} \texttt{max\_features} est l’hyperparamètre le plus important, car il contrôle directement le compromis entre la diversité des arbres et leur puissance individuelle.
+
+
 \section{Estimation de l’erreur \emph{Out-of-Bag} (OOB)}
 
 L’une des fonctionnalités les plus élégantes des forêts aléatoires est l’estimation de l’erreur \emph{Out-of-Bag} (OOB), qui fournit un mécanisme de validation intégré sans nécessiter un jeu de données de test séparé.
@@ -244,6 +302,13 @@ P(\text{non sélectionnée}) = \left( 1 - \frac{1}{n} \right)^n
 \]
 
 Lorsque $n$ tend vers l’infini, cette probabilité converge vers $1/e \approx 0,368$. Autrement dit, environ $36{,}8\%$ des observations sont laissées de côté pour chaque échantillon bootstrap. Ces observations non incluses sont appelées \emph{échantillons out-of-bag} pour cet arbre particulier.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/rf_bootstrap_detail.jpeg}
+    \caption{L'erreur OOB}
+    \label{fig:chap2_fig3}
+\end{figure}
 
 \subsection{Fonctionnement de l’erreur OOB}
 
@@ -305,6 +370,8 @@ En pratique, l’erreur OOB se rapproche généralement de l’erreur obtenue pa
 \[
 P(\text{non sélectionnée}) = \left( 1 - \frac{1}{n} \right)^n \to \frac{1}{e} \approx 0,368
 \]
+
+
 \section{Mesures de l’importance des variables}
 
 Comprendre quelles variables influencent les prédictions est essentiel pour l’interprétation du modèle, la sélection des caractéristiques et les insights métiers. Les forêts aléatoires offrent deux approches principales pour mesurer l’importance des variables.
@@ -331,6 +398,13 @@ où :
     \item $N$ est le nombre total d’échantillons,
     \item $\Delta I_t$ est la diminution d’impureté au nœud $t$ : $I_t - \frac{n_{\text{left}}}{n_t} I_{\text{left}} - \frac{n_{\text{right}}}{n_t} I_{\text{right}}$.
 \end{itemize}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{Chapters/images/feature_importance1.png}
+    \caption{mportance MDI (Gini) des variables}
+    \label{fig:chap2_fig3}
+\end{figure}
 
 \paragraph{Avantages de MDI :}
 \begin{itemize}
