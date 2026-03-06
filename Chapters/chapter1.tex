@@ -649,6 +649,150 @@ En cas de résultats multiples positifs ou tous négatifs, on choisit~:
 
 Le choix entre ces méthodes dépend du problème spécifique, du nombre de classes et des ressources disponibles.
 
+\section{Support Vector Regression (SVR)}
+
+\subsection{Du Support Vector Machine à la Support Vector Regression}
+
+\subsubsection{Rappel mathématique des SVM de classification}
+Les Machines à Vecteurs de Support (SVM) ont été originellement conçues par Vladimir Vapnik pour des problèmes de classification \citep{boser1992training}. Leur objectif est de trouver un hyperplan optimal séparant deux classes de données tout en maximisant la marge, c'est-à-dire la distance entre l'hyperplan et les observations les plus proches (les vecteurs de support). En classification, le modèle prédit une étiquette discrète $y_i \in \{-1, +1\}$ basée sur le signe de la fonction de décision $f(x) = \langle \mathbf{w}, \mathbf{x} \rangle + b$.
+
+\subsubsection{Différence fondamentale entre classification et régression}
+Contrairement à la classification qui cherche une frontière de séparation discrète, la régression vise à prédire une valeur continue $y_i \in \mathbb{R}$. La Support Vector Regression (SVR), introduite en 1996 \citep{drucker1997support}, applique les mêmes principes fondamentaux des SVM (marges maximales, vecteurs de support, régularisation) à la prédiction de valeurs continues. Au lieu de classifier les points d'un côté ou de l'autre d'une marge, le SVR cherche à inclure un maximum de points \textit{à l'intérieur} d'une marge de tolérance.
+
+\subsubsection{Adaptation de la notion de marge au problème de régression}
+En SVR, la notion de "marge séparatrice" devient un "tube d'erreur tolérée". L'objectif bascule : il ne s'agit plus de repousser les points hors de la marge, mais de trouver une fonction $f(x)$ d'allure aussi "plate" que possible qui englobe un maximum de points d'entraînement dans un tube de rayon $\epsilon$ autour de la courbe d'estimation.
+
+\subsection{Géométrie du SVR : le tube $\epsilon$-insensible}
+
+\subsubsection{Intuition géométrique}
+L'intuition principale du SVR repose sur le \textbf{tube $\epsilon$-insensible}. Imaginez un cylindre (ou tube) de rayon $\epsilon$ centré sur la fonction de prédiction $f(x)$. L'algorithme considère que toute observation située à l'intérieur de ce tube est "correctement prédite" et n'engendre aucune erreur. Seuls les points situés à l'extérieur du tube contribuent à la perte et servent à ajuster le modèle.
+
+\begin{figure}[H]
+    \centering
+    % Placeholder for SVR epsilon tube image
+    \includegraphics[width=0.7\textwidth]{Chapters/images/svr_epsilon_tube.png}
+    \caption{Représentation géométrique du tube $\epsilon$-insensible en Support Vector Regression. Les points à l'intérieur du tube (gris) n'engendrent pas de pénalité, contrairement aux points extérieurs.}
+    \label{fig:svr_epsilon_tube}
+\end{figure}
+
+\subsubsection{Définition formelle de la fonction de perte $\epsilon$-insensible}
+Mathématiquement, ceci se traduit par la fonction de perte $\epsilon$-insensible, notée $L_\epsilon$, définie formellement par Vapnik \citep{vapnik_1995} :
+\begin{equation}
+L_\epsilon(y, f(x)) = 
+\begin{cases} 
+0 & \text{si } |y - f(x)| \leq \epsilon \\
+|y - f(x)| - \epsilon & \text{sinon}
+\end{cases}
+\end{equation}
+
+\subsubsection{Comparaison avec la perte quadratique}
+Contrairement à la régression par moindres carrés classiques (OLS) qui utilise une fonction de perte quadratique $L(y, f(x)) = (y - f(x))^2$ pénalisant excessivement les grandes erreurs, la perte $\epsilon$-insensible induit une croissance linéaire de la pénalité pour les points extérieurs au tube. Cette linéarité confère au SVR une robustesse naturelle et significative face aux valeurs aberrantes (outliers) \citep{smola2004tutorial}.
+
+\subsubsection{Interprétation statistique de $\epsilon$}
+D'un point de vue statistique, le paramètre $\epsilon$ peut être vu comme la résolution ou le niveau de bruit inhérent aux données d'observation. Si on suppose que le signal pertinent est altéré par un bruit d'amplitude $\epsilon$, le tube permet précisément d'ignorer ce bruit lors de l'apprentissage de la relation sous-jacente.
+
+\subsection{Formulation mathématique du SVR}
+
+\subsubsection{Formulation primale}
+Pour un problème de régression linéaire, nous cherchons une fonction du type $f(x) = \langle \mathbf{w}, \mathbf{x} \rangle + b$. Pour que cette fonction soit la plus "plate" possible, nous devons minimiser la norme vectorielle $\|\mathbf{w}\|^2$. Le problème d'optimisation primal s'écrit donc :
+\begin{equation}
+\min_{\mathbf{w}, b} \frac{1}{2} \|\mathbf{w}\|^2
+\end{equation}
+sous les contraintes :
+\begin{equation}
+\begin{cases}
+y_i - \langle \mathbf{w}, \mathbf{x}_i \rangle - b \leq \epsilon \\
+\langle \mathbf{w}, \mathbf{x}_i \rangle + b - y_i \leq \epsilon
+\end{cases}
+\end{equation}
+Cette formulation suppose qu'il existe une fonction capable d'approximer tous les points avec une précision $\epsilon$, ce qui est rarement le cas en pratique.
+
+\subsubsection{Introduction des variables d'écart}
+Pour pallier cette impossibilité et traiter le bruit ou les données aberrantes, nous introduisons, à l'instar des SVM à marge souple, des \textbf{variables d'écart} (slack variables) notées $\xi_i$ et $\xi_i^*$. Elles quantifient respectivement le dépassement de la frontière supérieure et inférieure du tube $\epsilon$. Le problème devient alors :
+\begin{equation}
+\min_{\mathbf{w}, b, \xi, \xi^*} \frac{1}{2} \|\mathbf{w}\|^2 + C \sum_{i=1}^{n} (\xi_i + \xi_i^*)
+\end{equation}
+sous les contraintes :
+\begin{equation}
+\begin{cases}
+y_i - f(\mathbf{x}_i) \leq \epsilon + \xi_i \\
+f(\mathbf{x}_i) - y_i \leq \epsilon + \xi_i^* \\
+\xi_i, \xi_i^* \geq 0
+\end{cases}
+\label{eq:svr_primal}
+\end{equation}
+
+\subsubsection{Interprétation des contraintes}
+Les contraintes de l'équation \ref{eq:svr_primal} reflètent la dynamique d'erreur tolérée : un point $i$ se trouvant au-dessus du tube activera $\xi_i > 0$ (tandis que $\xi_i^* = 0$), et un point en-dessous du tube activera $\xi_i^* > 0$ (avec $\xi_i = 0$). La constante de régularisation $C > 0$ dicte quant à elle le compromis entre la "platitude" de la fonction (le terme de minimisation de l'hyperplan) et la tolérance aux erreurs dépassant le seuil $\epsilon$.
+
+\subsubsection{Convexité du problème}
+Ce problème de minimisation est un problème quadratique sous contraintes linéaires. Il s'agit d'un problème strictement \textbf{convexe}, ce qui garantit qu'il n'existe qu'un seul optimum global, évitant ainsi l'écueil des minima locaux rencontré fréquemment dans d'autres algorithmes comme les réseaux de neurones.
+
+\subsection{Dualité et noyaux}
+
+\subsubsection{Construction du Lagrangien}
+Pour résoudre ce problème de manière computationnellement efficace et introduire des noyaux non-linéaires, on fait appel à la théorie de la dualité de Lagrange. On construit le Lagrangien en introduisant deux jeux de multiplicateurs de Lagrange, $\alpha_i \geq 0$ et $\alpha_i^* \geq 0$, associés aux contraintes de dépassement du tube.
+
+\subsubsection{Passage à la formulation duale}
+En calculant les dérivées partielles du Lagrangien par rapport aux variables primales ($\mathbf{w}, b, \xi_i, \xi_i^*$) et en les annulant, on obtient le problème d'optimisation \textbf{dual}, qui se limite à maximiser une fonction quadratique dépendante uniquement des multiplicateurs $\alpha_i$ et $\alpha_i^*$.
+
+\subsubsection{Apparition du produit scalaire}
+La formulation duale possède une propriété capitale : les vecteurs caractéristiques d'entrée $\mathbf{x}_i$ n'apparaissent qu'exclusivement sous forme de \textbf{produits scalaires} $\langle \mathbf{x}_i, \mathbf{x}_j \rangle$ dans la fonction objectif à maximiser. 
+
+\subsubsection{Kernel Trick}
+C'est cette omniprésence du produit scalaire qui ouvre la porte au célèbre \textbf{Kernel Trick} (l'astuce du noyau). Si l'on souhaite effectuer une régression non-linéaire, on projette implicitement les données dans un espace de caractéristiques de plus grande dimension via une fonction $\phi(\mathbf{x})$. Plutôt que de calculer explicitement cette projection $\langle \phi(\mathbf{x}_i), \phi(\mathbf{x}_j) \rangle$, on utilise une fonction noyau $K(\mathbf{x}_i, \mathbf{x}_j)$. La fonction de régression finale évaluée en un point $x$ s'écrit alors :
+\begin{equation}
+f(x) = \sum_{i=1}^{n} (\alpha_i - \alpha_i^*) K(\mathbf{x}_i, x) + b
+\end{equation}
+
+\subsubsection{Théorème de Mercer}
+Pour qu'une fonction $K$ puisse être utilisée comme un noyau valide, elle doit respecter la condition de Mercer (le théorème de Mercer), qui stipule que la matrice de Gram générée par la fonction noyau doit être symétrique et semi-définie positive \citep{scholkopf2002learning}. Les noyaux classiques englobent le noyau linéaire, polynomial, Laplacien et le noyau RBF.
+
+\subsection{Les hyperparamètres du SVR : origine et rôle mathématique}
+
+\subsubsection{Le paramètre C}
+Le paramètre $C$, ou paramètre de pénalité de coût, introduit dans la formulation primale, détermine le poids accordé aux erreurs d'entraînement qui se situent au-delà de la limite du tube $\epsilon$. Un $C$ infiniment grand ne tolérera aucune erreur (ajustement très prononcé aux données de test, risque de surapprentissage élevé), tandis qu'un $C$ faible privilégie une surface lisse et plate au détriment de l'ajustement aux données, limitant la complexité du modèle.
+
+\subsubsection{Le paramètre $\epsilon$}
+Le paramètre $\epsilon$ définit la taille du tube de tolérance. Il régule nativement le nombre de vecteurs de support du modèle. Un $\epsilon$ très large englobera presque toutes les données (peu de vecteurs de support, modèle excessivement "aveugle" et potentiellement en sous-apprentissage), tandis qu'un $\epsilon$ quasi nul transformera la perte $\epsilon$-insensible en perte absolue pure (énormément de vecteurs de support, modèle complexe sensible au bruit).
+
+\subsubsection{Le choix du noyau}
+Le noyau est fondamental car il définit l'espace de \textit{feature mapping}. Le noyau Gaussien Radial Basis Function (RBF) est le plus repandu en pratique car il permet de modéliser implicitement un espace caractéristique de dimension infinie adapté à de nombreuses typologies de relations non-linéaires locales.
+
+\subsubsection{Le paramètre $\gamma$ (cas du noyau RBF)}
+Lorsqu'un noyau RBF est choisi, $K(\mathbf{x}_i, \mathbf{x}_j) = \exp(-\gamma \|\mathbf{x}_i - \mathbf{x}_j\|^2)$, l'hyperparamètre $\gamma$ (gamma) contrôle l'influence individuelle de chaque exemple d'entraînement (distance sur laquelle l'influence d'un vecteur de support s'exerce). Un $\gamma$ faible signifie une influence étendue ("lointaine") rendant la courbe de régression globalement souple, tandis qu'un $\gamma$ élevé réduit le rayon d'influence, conduisant à une courbe très accidentée ("spiky") qui épouse de trop près chaque point du jeu d'entraînement.
+
+\subsubsection{Autres paramètres des noyaux (degré, coef0, etc.)}
+D'autres hyperparamètres accompagnent des noyaux spécifiques : le noyau polynomial fait intervenir un \textit{degré} de développement et un coefficient indépendant (\textit{coef0}), impactant directement l'inflexion et la complexité hiérarchique du modèle ajusté.
+
+\subsection{Interactions entre hyperparamètres}
+
+\subsubsection{Interaction C -- $\epsilon$}
+L'ajustement du modèle est profondément dicté par l'interaction entre $C$ et $\epsilon$. Il est possible de rendre la frontière plus serrée en diminuant $\epsilon$, mais si $C$ est très faible en parallèle, le modèle ne pénalisera pas fortement les erreurs induites. À l'inverse, un grand $\epsilon$ combiné à un très grand $C$ engendre un modèle "creux", mais réagissant hyperboliquement aux rares points débordant la marge.
+
+\subsubsection{Interaction C -- $\gamma$}
+Dans l'espace RBF, le couple $(C, \gamma)$ représente le cœur du problème d'optimisation. Une valeur élevée de $C$ et $\gamma$ amènera infailliblement au \textit{overfitting} complet des moindres déviations du signal, le modèle mémorisant les exemples avec des pics isolés impossibles à généraliser. Souvent, the paramètre $C$ fixe l'amplitude structurelle, là où $\gamma$ orchestre la topologie radiale locale.
+
+\subsubsection{Impact sur biais--variance}
+Ce triptyque de paramètres pilote le célèbre compromis biais-variance. L'augmentation de $C$ diminue généralement le biais mais accroît drastiquement la variance. L'augmentation de $\epsilon$ ou la diminution de $\gamma$ agit en sens inverse, étalant la prédiction, c'est-à-dire en lissant le bruit mais risquant un sous-ajustement endémique.
+
+\subsubsection{Influence sur le nombre de vecteurs de support}
+Seuls les points d'entraînement se trouvant \textit{sur} ou \textit{à l'extérieur} de la frontière du tube $\epsilon$ ont des coefficients multiplicateurs de Lagrange non nuls ($\alpha_i - \alpha_i^* \neq 0$). Ces vecteurs sont appelés \textit{Vecteurs de Support}. L'interaction entre l'ensemble des paramètres ($C, \epsilon, \gamma$) module la proportion de vecteurs de support du modèle final.
+
+\subsection{Propriétés théoriques du SVR}
+
+\subsubsection{Sparsité}
+La propriété mathématique clé du SVR par rapport aux autres méthodes statistiques de régression est sa \textbf{sparsité} (ou parcimonie). Étant donné que la fonction d'approximation ne dépend finalement que d'un sous-ensemble strict de l'échantillon d'apprentissage (les Vecteurs de Support), le modèle final est incroyablement compact. La plupart des coefficients $\alpha$ sont nuls pour les points siégant à l'intérieur du tube, ce qui rend l'inférence extrêmement rapide.
+
+\subsubsection{Solution optimale unique}
+Grâce à la formulation d'optimisation quadratique rigoureusement convexe, la recherche de la fonction $f(x)$ ne présente pas de minima locaux. Si les hyperparamètres sont définis, la solution mathématique de l'hyperplan optimal dans l'espace reconstitué est globale et \textbf{unique}.
+
+\subsubsection{Lien avec la régularisation de Tikhonov}
+L'objectif de minimisation impliquant l'opération $\min \|\mathbf{w}\|^2$ couplé au terme matriciel de la fonction de perte révèle une filiation directe avec le formalisme mathématique de la \textbf{Régularisation de Tikhonov} (Régression Ridge). Dans le SVR, le contrôle de complexité s'opère simultanément via ce lissage a priori et la nature particulière de la perte $\epsilon$-insensible limitant la susceptibilité locale.
+
+\subsubsection{Interprétation dans les espaces de Hilbert}
+Le socle théorique repose intégralement sur les Reproducing Kernel Hilbert Spaces (Espaces de Hilbert à Noyau Reproduisant, RKHS). Le problème d'inférence en SVR n'est autre qu'une application du Théorème du Représentant (Representer Theorem). Ce théorème justifie de manière inconditionnelle la recherche des coefficients de solution sous l'unique forme combinatoire des fonctions caractéristiques au sein de cet espace fonctionnel de Hilbert \citep{scholkopf2001generalized}.
+
 \section*{Conclusion}
 Les Support Vector Machines (SVM) sont des algorithmes de classification et de régression puissants, particulièrement efficaces pour les problèmes à haute dimensionnalité et pour les jeux de données où les classes sont bien séparables. Grâce à l'utilisation des marges maximales et des noyaux (kernels), les SVM peuvent modéliser des frontières de décision complexes tout en minimisant le risque de surapprentissage. Bien qu'ils puissent être sensibles aux choix des hyperparamètres et coûteux en calcul pour de très grands ensembles de données, leur précision et leur robustesse font des SVM un outil essentiel dans la boîte à outils de l'apprentissage automatique.
 
