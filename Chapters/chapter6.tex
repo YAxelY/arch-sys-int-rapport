@@ -11,12 +11,12 @@ En revanche, les modèles basés sur les arbres de décision offrent des résult
 \subsection{Impact des Modèles Avancés (Voting Ensemble et Stacking)}
 Afin de repousser les limites des modèles individuels, plusieurs architectures d'apprentissage ensembliste avancées ont été testées : un \textit{Soft Voting Ensemble}, un \textit{Stacking avec Régression Logistique} et un \textit{Stacking (v2) avec XGBoost} comme méta-apprenant.
 
-Le modèle \textit{Stacking v2}, qui permet au méta-apprenant d'accéder aux caractéristiques originales (passthrough), obtient d'excellents résultats avec un ROC-AUC de 0.9461. Cependant, son F1-Score (0.8077) et son Recall (0.7778) restent en deçà de ceux du modèle XGBoost individuel. Le \textit{Soft Voting Ensemble} présente quant à lui une approche équilibrée mais n'améliore pas significativement les performances par rapport aux meilleurs modèles de base (Accuracy de 0.8701).
+Le modèle \textit{Stacking v2}, qui permet au méta-apprenant d'accéder aux caractéristiques originales (passthrough), obtient d'excellents résultats avec un ROC-AUC de 0.9461. Cependant, son F1-Score (0.8077) et son Recall (0.7778) reste en deçà de ceux du modèle XGBoost individuel. Le \textit{Soft Voting Ensemble} présente quant à lui une approche équilibrée mais n'améliore pas significativement les performances par rapport aux meilleurs modèles de base (Accuracy de 0.8701).
 
 Ces résultats démontrent que, bien que les méthodes de Stacking et de Voting soient structurellement plus complexes et théoriquement plus performantes, elles ne surpassent pas nécessairement un algorithme XGBoost rigoureusement optimisé, notamment grâce à notre recherche fine d'hyperparamètres via Optuna (plus de 200 essais).
 
 \subsection{Analyse Comparative et Sélection du Meilleur Modèle}
-Le tableau ci-dessous synthétise les performances des différents modèles évalués :
+Le tableau ci-dessous et la Figure \ref{fig:radar_chart} synthétisent les performances des différents modèles évalués :
 
 \begin{table}[htbp]
 \centering
@@ -36,6 +36,13 @@ SVM (RBF) & 0.8052 & 0.7609 & 0.6481 & 0.7000 & 0.8589 & 0.8714 \\
 \label{tab:comparaison_modeles}
 \end{table}
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Chapters/images/extracted/extracted_image_35_0.png}
+    \caption{Comparatif multi-métriques de l'ensemble des modèles via un graphique en radar}
+    \label{fig:radar_chart}
+\end{figure}
+
 À la lumière de ce tableau, \textbf{XGBoost} est sélectionné comme le meilleur modèle global. Il excelle sur la majorité des métriques, avec le ROC-AUC le plus élevé (0.9517) et une excellente stabilité en validation croisée (0.9486). Avec une Accuracy frôlant les 90\%, il représente le compromis idéal entre précision de prédiction et sensibilité au dépistage.
 
 \section{Discussion}
@@ -49,16 +56,19 @@ Il est également intéressant d'analyser l'importance des variables utilisées 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1\textwidth]{Chapters/images/feature_importance_mi.png}
-    \caption{Importance relative des caractéristiques selon l'Information Mutuelle}
-    \label{fig:feature_importance_mi}
+    \includegraphics[width=1\textwidth]{Chapters/images/extracted/extracted_image_43_0.png}
+    \caption{Comparaison de l'importance des caractéristiques (Random Forest vs XGBoost)}
+    \label{fig:feature_importance}
 \end{figure}
+
+\subsection{Biais et Variance : Analyse des Courbes d'Apprentissage}
+Les courbes d'apprentissage (Figure \ref{fig:learning_curves}) permettent d'ausculter le comportement des algorithmes vis-à-vis de la taille du corpus. On remarque que les réseaux d'arbres (RF, XGBoost) préservent une excellente validation croisée démontrant leur robustesse.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1\textwidth]{Chapters/images/feature_importance_rf_xgb.png}
-    \caption{Comparaison de l'importance des caractéristiques (Random Forest vs XGBoost)}
-    \label{fig:feature_importance}
+    \includegraphics[width=1\linewidth]{Chapters/images/extracted/extracted_image_45_0.png}
+    \caption{Courbes d'apprentissage mesurant l'évolution de la qualité analytique (ROC-AUC) selon le volume de données fournies.}
+    \label{fig:learning_curves}
 \end{figure}
 
 \subsection{Interprétation Clinique des Métriques}
@@ -70,22 +80,50 @@ La Figure~\ref{fig:confusion_matrix} illustre la matrice de confusion obtenue pa
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1\textwidth]{Chapters/images/cm_top3.png}
+    \includegraphics[width=1\textwidth]{Chapters/images/extracted/extracted_image_37_0.png}
     \caption{Matrices de Confusion des algorithmes les plus performants}
     \label{fig:confusion_matrix}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.9\textwidth]{Chapters/images/roc_curves_all.png}
+    \includegraphics[width=0.9\textwidth]{Chapters/images/extracted/extracted_image_39_0.png}
     \caption{Courbes ROC de l'ensemble des modèles évalués}
     \label{fig:roc_curve}
+\end{figure}
+
+L'analyse des courbes Précision-Rappel (Figure \ref{fig:pr_all}) apporte une dimension supplémentaire : dans ce corpus déséquilibré, ces courbes offrent une vision plus réaliste de l'efficience algorithmique. Là encore, le modèle XGBoost s'avère supérieur, conservant un \textit{Average Precision} très élevé face aux autres approches.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{Chapters/images/extracted/extracted_image_41_0.png}
+    \caption{Courbes Précision-Rappel pour tous les modèles}
+    \label{fig:pr_all}
 \end{figure}
 
 \subsection{Limites de l'Étude Expérimentale}
 Malgré ces résultats très encourageants, l'étude présente certaines limites inhérentes au jeu de données "Pima Indians Diabetes". D'une part, la taille relativement modeste du dataset (768 individus dont seulement 154 en jeu de test) rend les scores d'évaluation sensibles aux variations d'échantillonnage, bien que la validation croisée stratifiée atténue ce risque. 
 
 D'autre part, la technique de suréchantillonnage Borderline-SMOTE, bien que très efficace, génère des données synthétiques. Cela implique une forte dépendance aux paramètres du SMOTE, et le modèle pourrait potentiellement réagir différemment en condition réelle face à une distribution de patients fondamentalement nouvelle. 
+
+\subsection{Confrontation des résultats avec la littérature}
+Si l'on compare nos performances définitives aux travaux examinés lors de notre revue de littérature (Chapitre 4), l'approche intégrée proposée dans ce projet s'inscrit au-delà de nombreuses références. Par exemple, tandis que \citeauthor{zou2018} faisaient aboutir un Random Forest à 80,84\% d'exactitude (sur PIDD), notre tuning hyper-paramétrique repousse ce score à 88,96\% (pour XGBoost et Random Forest). Similairement, bien que \citeauthor{iparraguirre2023} valident l'usage du système SMOTE (atteignant 79,6\% avec K-NN), l'intégration combinée d'un \textit{Borderline-SMOTE}, d'une transformation \textit{Yeo-Johnson} et d'un Feature Engineering médical (Ratio Glucose/Insuline, BMI\_Age) démontre dans cette étude une synergie empirique très nette. Le tableau ci-dessous synthétise ce saut qualitatif par rapport à l'ancien pipeline brut du dataset (sans optimisation avancée).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Mesure de l'impact des optimisations sur la précision finale du XGBoost}
+    \resizebox{\columnwidth}{!}{%
+    \begin{tabular}{lccc}
+    \toprule
+    \textbf{Métrique} & \textbf{Approche Traditionnelle} & \textbf{Approche Optimisée (Pipeline actuel)} & \textbf{Gain mesuré} \\
+    \midrule
+    Accuracy & 75,32 \% & \textbf{88,96 \%} & +13,64 \% \\
+    F1-Score & 63,46 \% & \textbf{84,96 \%} & +21,50 \% \\
+    ROC-AUC & 82,61 \% & \textbf{95,17 \%} & +12,56 \% \\
+    \bottomrule
+    \end{tabular}%
+    }
+    \label{tab:evolution_scores}
+\end{table}
 
 \section{Perspectives}
 

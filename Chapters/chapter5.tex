@@ -2,13 +2,13 @@
 
 %----------------------------------------------------------------
 \section{Introduction}
-%----------------------------------------------------------------
+----------------------------------------------------------------
 
 Ce chapitre détaille la mise en œuvre expérimentale des trois algorithmes étudiés dans la partie théorique, à savoir la Machine à Vecteurs de Support (SVM), les Forêts Aléatoires (Random Forest) et l'algorithme XGBoost, appliqués spécifiquement à la détection du diabète. L'intégralité du traitement de bout en bout, depuis l'acquisition des données brutes jusqu'à l'évaluation rigoureuse des modèles prédictifs, a été programmée en Python en exploitant les bibliothèques \texttt{scikit-learn}, \texttt{XGBoost}, \texttt{imbalanced-learn} et \texttt{Optuna}.
 
 L'approche adoptée dans ce chapitre vise un triple objectif. Premièrement, il s'agit de décrire avec une grande minutie le jeu de données exploité et de souligner ses particularités statistiques. Deuxièmement, nous exposons de façon exhaustive la chaîne de prétraitement et le processus de création de nouvelles entités prédictives (ingénierie des caractéristiques), étape fondamentale qui constitue l'une des contributions majeures de notre étude. Troisièmement, nous détaillons les résultats quantitatifs obtenus, tant pour les modèles individuels que pour les approches combinées (méthodes ensemblistes), en proposant une lecture éclairée de leurs performances.
 
-%----------------------------------------------------------------
+----------------------------------------------------------------
 \section{Présentation du jeu de données}
 %----------------------------------------------------------------
 
@@ -46,6 +46,30 @@ Ce jeu de données regroupe un total de \textbf{768 observations} cliniques. Cel
 
 L'examen de la variable cible révèle un déséquilibre modéré au sein du corpus. Plus précisément, \textbf{500 observations} s'inscrivent dans la classe majoritaire (patientes non diabétiques), ce qui représente 65,1\% de l'échantillon, tandis que \textbf{268 observations} relèvent de la classe minoritaire (patientes diagnostiquées diabétiques), soit 34,9\% du jeu de données. Cette asymétrie de distribution reflète de manière réaliste la dynamique épidémiologique d'une population à haut risque de développer un trouble métabolique. Toutefois, sur le plan de l'apprentissage automatique, ce déséquilibre représente un défi technique substantiel. Cette contrainte fondamentale justifie l'emploi ultérieur de méthodes avancées de rééchantillonnage algorithmique, ainsi que le recours systématique à des métriques d'évaluation spécialisées (telles que le score F1 ou l'aire sous la courbe ROC) afin d'éviter les biais d'interprétation inhérents à la simple exactitude globale (\textit{accuracy}).
 
+La Figure \ref{fig:distributions} illustre la distribution de chaque variable selon la classe. On observe que les distributions des patientes diabétiques (en rouge) sont souvent décalées vers des valeurs plus élevées, notamment pour le \texttt{Glucose}, le \texttt{BMI} et l'\texttt{Age}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Chapters/images/extracted/extracted_image_6_0.png}
+    \caption{Distribution des caractéristiques par classe (Bleu : Non Diabétique, Rouge : Diabétique)}
+    \label{fig:distributions}
+\end{figure}
+
+L'analyse des corrélations linéaires (Pearson), présentée en Figure \ref{fig:correlation}, révèle que le \texttt{Glucose} ($r=0.47$) et le \texttt{BMI} ($r=0.29$) sont les variables les plus fortement corrélées avec la présence du diabète.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Chapters/images/extracted/extracted_image_8_0.png}
+    \caption{Matrice de corrélation de Pearson entre les différentes variables et la cible}
+    \label{fig:correlation}
+\end{figure}
+
+L'examen des boîtes à moustaches (Figure \ref{fig:boxplots}) confirme ces tendances tout en mettant en évidence la présence de nombreuses valeurs atypiques, particulièrement pour l'\texttt{Insulin} et la \texttt{DiabetesPedigreeFunction}. On y remarque d'ores et déjà des valeurs nulles physiologiquement impossibles, par exemple pour le \texttt{Glucose} ou le \texttt{BMI}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Chapters/images/extracted/extracted_image_10_0.png}
+    \caption{Boxplots de chaque caractéristique selon la classe}
+    \label{fig:boxplots}
+\end{figure}
+
 %----------------------------------------------------------------
 \section{Chaîne de prétraitement et optimisation des données}
 %----------------------------------------------------------------
@@ -76,6 +100,14 @@ La substitution arbitraire de ces valeurs manquantes par la médiane globale de 
     \end{tabular}
 \end{table}
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Chapters/images/extracted/extracted_image_12_0.png}
+    \caption{Analyse des zéros biologiquement impossibles (valeurs manquantes déguisées)}
+    \label{fig:missing_zeros}
+\end{figure}
+
+
 \subsection{Rectification des valeurs extrêmes (Winsorisation asymétrique)}
 
 Même après la phase d'imputation ciblée, le jeu de données conserve des occurrences résiduelles de valeurs extrêmes susceptibles d'altérer la convergence des algorithmes d'optimisation mathématique sous-jacents aux modèles de classification. Dans cette optique, nous avons opéré sur l'ensemble des descripteurs une \textbf{procédure de winsorisation fixée aux percentiles 1 et 99}. Suivant ce protocole systématique, toute valeur biologique isolée tombant en deçà du 1\textsuperscript{er} percentile d'une distribution est rehaussée à cette même borne, tandis qu'inversement, toute mesure dépassant le 99\textsuperscript{ème} percentile est tronquée à cette limite supérieure. Cette opération chirurgicale sauvegarde la forme générale de la distribution tout en neutralisant de façon stricte l'impact des anomalies isolées. Le récapitulatif des interventions, par attribut, figure dans le tableau~\ref{tab:winsorization}.
@@ -100,6 +132,14 @@ Même après la phase d'imputation ciblée, le jeu de données conserve des occu
         \hline
     \end{tabular}
 \end{table}
+
+La Figure \ref{fig:pretraitement_impact} illustre l'impact très positif de ces deux opérations sur les distributions de l'insuline et du glucose, dont l'allure est ramenée vers une forme plus représentative de la réalité biologique.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Chapters/images/extracted/extracted_image_16_0.png}
+    \caption{Comparatif des distributions de l'Insuline et du Glucose avant et après imputation et winsorisation}
+    \label{fig:pretraitement_impact}
+\end{figure}
 
 \subsection{Ingénierie avancée des caractéristiques (Feature Engineering)}
 \label{sec:feature_engineering}
@@ -135,7 +175,14 @@ Pour garantir une objectivité totale lors des validations, le jeu de données s
 
 Le lissage numérique de nos observations s'appuie sur la \textbf{transformation par puissance de Yeo-Johnson}. Ce mécanisme normalisateur surpasse largement la standardisation naïve (type \textit{Z-score}), particulièrement face aux lois de distribution singulièrement étirées ou asymétriques telles que celles caractérisant les variables l'insuline et de l'épaisseur du pli tricipital. Il est à préciser que le transformateur de distribution a été ajusté en excluant fermement le lot de validation, proscrivant ainsi toute interférence de donnée (\textit{data leakage}).
 
-Face au constat du déséquilibre endémique au sein du sous-ensemble d'apprentissage (où l'on compte 400 profils sains pour seulement 214 profils malades), la démarche s'est dotée de l'algorithme avancé \textbf{Borderline-SMOTE}. S'écartant délibérément de l'algorithme SMOTE rudimentaire, cette solution de sur-échantillonnage cible uniquement la frange limite entre les nuages de points classifiés, pour synthétiser mécaniquement 186 profils diabétiques additionnels sans empiéter sur le territoire majoritaire. L'ensemble rectifié s'appuie in fine sur un équilibre parfait de 400 échantillons structurés pour la classe 0 contre 400 échantillons structurés pour la classe 1 \citep{wee2024}.
+Face au constat du déséquilibre endémique au sein du sous-ensemble d'apprentissage (où l'on compte 400 profils sains pour seulement 214 profils malades), la démarche s'est dotée de l'algorithme avancé \textbf{Borderline-SMOTE}. S'écartant délibérément de l'algorithme SMOTE rudimentaire, cette solution de sur-échantillonnage cible uniquement la frange limite entre les nuages de points classifiés, pour synthétiser mécaniquement 186 profils diabétiques additionnels sans empiéter sur le territoire majoritaire. L'ensemble rectifié s'appuie in fine sur un équilibre parfait de 400 échantillons structurés pour la classe 0 contre 400 échantillons structurés pour la classe 1 \citep{wee2024}. La Figure \ref{fig:smote_balance} illustre cet équilibrage.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{Chapters/images/extracted/extracted_image_24_0.png}
+    \caption{Rééquilibrage strict des classes d'apprentissage grâce au Borderline-SMOTE}
+    \label{fig:smote_balance}
+\end{figure}
 
 %----------------------------------------------------------------
 \section{Sélection rigoureuse des attributs descriptifs}
@@ -145,7 +192,7 @@ Afin de mesurer l'impact théorique des variables sans dépendre de l'architectu
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\linewidth]{Chapters/images/mi_scores.png}
+    \includegraphics[width=0.85\linewidth]{Chapters/images/extracted/extracted_image_20_0.png}
     \caption{Visualisation graphique des scores d'Information Mutuelle (MI) calculés pour l'intégralité des 16 variables. Plus la barre est étendue, plus la variable est porteuse d'informations prédictives concernant la présence du diabète.}
     \label{fig:mi_scores}
 \end{figure}
