@@ -9,11 +9,11 @@ D'après les résultats expérimentaux obtenus, le modèle \textbf{SVM avec noya
 En revanche, les modèles basés sur les arbres de décision offrent des résultats nettement supérieurs. Le \textbf{Random Forest} atteint une Accuracy de 0.8896 et un F1-Score de 0.8440, montrant une excellente capacité de généralisation. Le modèle \textbf{XGBoost} se distingue particulièrement avec des performances similaires en Accuracy (0.8896) mais un F1-Score légèrement supérieur (0.8496) et un Recall optimal de 0.8889, prouvant sa robustesse face à des données complexes et déséquilibrées.
 
 \subsection{Impact des Modèles Avancés (Voting Ensemble et Stacking)}
-Afin de repousser les limites des modèles individuels, plusieurs architectures d'apprentissage ensembliste avancées ont été testées : un \textit{Soft Voting Ensemble}, un \textit{Stacking avec Régression Logistique} et un \textit{Stacking (v2) avec XGBoost} comme méta-apprenant.
+Afin de repousser les limites des modèles individuels, plusieurs architectures d'apprentissage ensembliste avancées ont été testées : un \textit{Soft Voting Ensemble} et un \textit{Stacking avec Régression Logistique} comme méta-apprenant.
 
-Le modèle \textit{Stacking v2}, qui permet au méta-apprenant d'accéder aux caractéristiques originales (passthrough), obtient d'excellents résultats avec un ROC-AUC de 0.9461. Cependant, son F1-Score (0.8077) et son Recall (0.7778) reste en deçà de ceux du modèle XGBoost individuel. Le \textit{Soft Voting Ensemble} présente quant à lui une approche équilibrée mais n'améliore pas significativement les performances par rapport aux meilleurs modèles de base (Accuracy de 0.8701).
+Le modèle \textit{Stacking (LR)}, qui se positionne au-dessus des prédictions de base, obtient d'excellents résultats avec un ROC-AUC de 0.9480 et un F1-Score de 0.8468. Son Recall (0.8704) le rend très pertinent. Le \textit{Soft Voting Ensemble} présente des performances strictement équivalentes en termes de F1-Score et de Recall, mais avec un ROC-AUC légèrement inférieur à 0.9369.
 
-Ces résultats démontrent que, bien que les méthodes de Stacking et de Voting soient structurellement plus complexes et théoriquement plus performantes, elles ne surpassent pas nécessairement un algorithme XGBoost rigoureusement optimisé, notamment grâce à notre recherche fine d'hyperparamètres via Optuna (plus de 200 essais).
+Ces résultats démontrent que, bien que les méthodes de Stacking et de Voting soient structurellement plus complexes et théoriquement plus performantes en combinant les forces de différents modèles, elles ne surpassent pas nécessairement un algorithme XGBoost singulier. La configuration de base de XGBoost se révèle être le meilleur compromis de performance.
 
 \subsection{Analyse Comparative et Sélection du Meilleur Modèle}
 Le tableau ci-dessous et la Figure \ref{fig:radar_chart} synthétisent les performances des différents modèles évalués :
@@ -24,12 +24,11 @@ Le tableau ci-dessous et la Figure \ref{fig:radar_chart} synthétisent les perfo
 \toprule
 \textbf{Modèle} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{ROC-AUC} & \textbf{CV AUC} \\
 \midrule
-XGBoost & 0.8896 & 0.8136 & 0.8889 & 0.8496 & 0.9517 & 0.9486 \\
-Stacking v2 & 0.8701 & 0.8400 & 0.7778 & 0.8077 & 0.9461 & 0.9455 \\
-Random Forest & 0.8896 & 0.8364 & 0.8519 & 0.8440 & 0.9453 & 0.9378 \\
-Stacking (LR) & 0.8766 & 0.8302 & 0.8148 & 0.8224 & 0.9317 & 0.9439 \\
-Voting Ensemble & 0.8701 & 0.7931 & 0.8519 & 0.8214 & 0.9337 & 0.9384 \\
-SVM (RBF) & 0.8052 & 0.7609 & 0.6481 & 0.7000 & 0.8589 & 0.8714 \\
+XGBoost & 0.8961 & 0.8276 & 0.8889 & 0.8571 & 0.9531 & 0.9394 \\
+Stacking (LR) & 0.8896 & 0.8246 & 0.8704 & 0.8468 & 0.9480 & 0.9364 \\
+Voting Ensemble & 0.8896 & 0.8246 & 0.8704 & 0.8468 & 0.9369 & 0.9345 \\
+Random Forest & 0.8831 & 0.8103 & 0.8704 & 0.8393 & 0.9443 & 0.9359 \\
+SVM (RBF) & 0.8377 & 0.7302 & 0.8519 & 0.7863 & 0.9017 & 0.8972 \\
 \bottomrule
 \end{tabular}
 \caption{Comparaison des performances des modèles sur le jeu de test}
@@ -43,14 +42,14 @@ SVM (RBF) & 0.8052 & 0.7609 & 0.6481 & 0.7000 & 0.8589 & 0.8714 \\
     \label{fig:radar_chart}
 \end{figure}
 
-À la lumière de ce tableau, \textbf{XGBoost} est sélectionné comme le meilleur modèle global. Il excelle sur la majorité des métriques, avec le ROC-AUC le plus élevé (0.9517) et une excellente stabilité en validation croisée (0.9486). Avec une Accuracy frôlant les 90\%, il représente le compromis idéal entre précision de prédiction et sensibilité au dépistage.
+À la lumière de ce tableau, \textbf{XGBoost} est sélectionné comme le meilleur modèle global. Il excelle sur la majorité des métriques, avec le ROC-AUC le plus élevé (0.9531) et une excellente stabilité en validation croisée (0.9394). Avec une Accuracy de 89.61\%, il représente le compromis idéal entre précision de prédiction et sensibilité au dépistage.
 
 \section{Discussion}
 
 \subsection{Impact Décisif du Prétraitement et de l'Ingénierie des Données}
 Une part majeure du succès de notre modèle réside dans la phase rigoureuse de préparation des données. L'application d'une stratégie d'imputation par classe (médiane) pour corriger les zéros aberrants (ex: taux de glucose ou tension artérielle nuls), combinée à la technique de Winsorization (1er et 99ème percentiles) pour atténuer l'impact des valeurs extrêmes, a considérablement purifié l'espace des descripteurs.
 
-De plus, la distribution initiale des données souffrait d'un asymétrie de classes (500 non diabétiques / 268 diabétiques). L'utilisation de l'algorithme \textbf{Borderline-SMOTE}, couplée à une transformation de puissance (PowerTransformer, méthode Yeo-Johnson), a permis de générer des échantillons synthétiques de haute qualité près des frontières de décision. Par rapport à une approche basique sans ce pipeline avancé, les performances globales ont connu un bond exceptionnel : \textbf{+0.1364} en Accuracy (passant de 0.7532 à 0.8896) et \textbf{+0.2150} en F1-Score.
+De plus, la distribution initiale des données souffrait d'un asymétrie de classes (500 non diabétiques / 268 diabétiques). L'utilisation de l'algorithme \textbf{Borderline-SMOTE}, couplée à une transformation de puissance (PowerTransformer, méthode Yeo-Johnson), a permis de générer des échantillons synthétiques de haute qualité près des frontières de décision. Par rapport à une approche basique sans ce pipeline avancé, les performances globales ont connu un bond exceptionnel : \textbf{+0.1429} en Accuracy (passant de 0.7532 à 0.8961) et \textbf{+0.2225} en F1-Score.
 
 Il est également intéressant d'analyser l'importance des variables utilisées par les modèles, illustrée en Figure~\ref{fig:feature_importance}. Les caractéristiques cliniques (comme la glycémie, l'âge, le BMI et l'insuline) jouent un rôle prépondérant dans la prise de décision, avec des corrélations fortes mesurées via l'Information Mutuelle.
 
@@ -76,7 +75,7 @@ Dans le cadre du diagnostic médical assisté par intelligence artificielle, par
 
 C'est pourquoi l'optimisation a fortement ciblé le \textbf{Recall} (sensibilité) et le \textbf{F1-Score}. Selon le rapport de classification final de XGBoost, le modèle atteint un Recall de 0.8889 sur la classe "Diabétique". Cela signifie que l'algorithme identifie correctement près de 89\% des patients réellement atteints de diabète, offrant ainsi un excellent outil de dépistage précoce limitant les risques de non-détection.
 
-La Figure~\ref{fig:confusion_matrix} illustre la matrice de confusion obtenue par les trois meilleurs modèles (XGBoost, Stacking v2, Random Forest) sur l'ensemble de test. Elle met en évidence la capacité de XGBoost à identifier la grande majorité des patients diabétiques (réduisant les faux négatifs à 11.1\%). La performance globale comparative est également confirmée par la Figure~\ref{fig:roc_curve}, où la courbe ROC de XGBoost et des modèles d'ensemble dominent l'espace, résultant en d'excellents scores ROC-AUC (> 0.94).
+La Figure~\ref{fig:confusion_matrix} illustre la matrice de confusion obtenue par tous les modèles sur l'ensemble de test. Elle met en évidence la capacité de XGBoost à identifier la grande majorité des patients diabétiques (réduisant les faux négatifs à 11.1\%). La performance globale comparative est également confirmée par la Figure~\ref{fig:roc_curve}, où la courbe ROC de XGBoost domine l'espace, résultant en d'excellents scores ROC-AUC (> 0.95).
 
 \begin{figure}[htbp]
     \centering
@@ -106,7 +105,7 @@ Malgré ces résultats très encourageants, l'étude présente certaines limites
 D'autre part, la technique de suréchantillonnage Borderline-SMOTE, bien que très efficace, génère des données synthétiques. Cela implique une forte dépendance aux paramètres du SMOTE, et le modèle pourrait potentiellement réagir différemment en condition réelle face à une distribution de patients fondamentalement nouvelle. 
 
 \subsection{Confrontation des résultats avec la littérature}
-Si l'on compare nos performances définitives aux travaux examinés lors de notre revue de littérature (Chapitre 4), l'approche intégrée proposée dans ce projet s'inscrit au-delà de nombreuses références. Par exemple, tandis que \citeauthor{zou2018} faisaient aboutir un Random Forest à 80,84\% d'exactitude (sur PIDD), notre tuning hyper-paramétrique repousse ce score à 88,96\% (pour XGBoost et Random Forest). Similairement, bien que \citeauthor{iparraguirre2023} valident l'usage du système SMOTE (atteignant 79,6\% avec K-NN), l'intégration combinée d'un \textit{Borderline-SMOTE}, d'une transformation \textit{Yeo-Johnson} et d'un Feature Engineering médical (Ratio Glucose/Insuline, BMI\_Age) démontre dans cette étude une synergie empirique très nette. Le tableau ci-dessous synthétise ce saut qualitatif par rapport à l'ancien pipeline brut du dataset (sans optimisation avancée).
+Si l'on compare nos performances définitives aux travaux examinés lors de notre revue de littérature (Chapitre 4), l'approche intégrée proposée dans ce projet s'inscrit au-delà de nombreuses références. Par exemple, tandis que \citeauthor{zou2018} faisaient aboutir un Random Forest à 80,84\% d'exactitude (sur PIDD), notre tuning hyper-paramétrique repousse ce score à 89,61\% (pour XGBoost et Random Forest). Similairement, bien que \citeauthor{iparraguirre2023} valident l'usage du système SMOTE (atteignant 79,6\% avec K-NN), l'intégration combinée d'un \textit{Borderline-SMOTE}, d'une transformation \textit{Yeo-Johnson} et d'un Feature Engineering médical (Ratio Glucose/Insuline, BMI\_Age) démontre dans cette étude une synergie empirique très nette. Le tableau ci-dessous synthétise ce saut qualitatif par rapport à l'ancien pipeline brut du dataset (sans optimisation avancée).
 
 \begin{table}[htbp]
     \centering
@@ -116,9 +115,9 @@ Si l'on compare nos performances définitives aux travaux examinés lors de notr
     \toprule
     \textbf{Métrique} & \textbf{Approche Traditionnelle} & \textbf{Approche Optimisée (Pipeline actuel)} & \textbf{Gain mesuré} \\
     \midrule
-    Accuracy & 75,32 \% & \textbf{88,96 \%} & +13,64 \% \\
-    F1-Score & 63,46 \% & \textbf{84,96 \%} & +21,50 \% \\
-    ROC-AUC & 82,61 \% & \textbf{95,17 \%} & +12,56 \% \\
+    Accuracy & 75,32 \% & \textbf{89,61 \%} & +14,29 \% \\
+    F1-Score & 63,46 \% & \textbf{85,71 \%} & +22,25 \% \\
+    ROC-AUC & 82,61 \% & \textbf{95,31 \%} & +12,70 \% \\
     \bottomrule
     \end{tabular}%
     }

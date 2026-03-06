@@ -2,13 +2,11 @@
 
 %----------------------------------------------------------------
 \section{Introduction}
-----------------------------------------------------------------
 
 Ce chapitre détaille la mise en œuvre expérimentale des trois algorithmes étudiés dans la partie théorique, à savoir la Machine à Vecteurs de Support (SVM), les Forêts Aléatoires (Random Forest) et l'algorithme XGBoost, appliqués spécifiquement à la détection du diabète. L'intégralité du traitement de bout en bout, depuis l'acquisition des données brutes jusqu'à l'évaluation rigoureuse des modèles prédictifs, a été programmée en Python en exploitant les bibliothèques \texttt{scikit-learn}, \texttt{XGBoost}, \texttt{imbalanced-learn} et \texttt{Optuna}.
 
 L'approche adoptée dans ce chapitre vise un triple objectif. Premièrement, il s'agit de décrire avec une grande minutie le jeu de données exploité et de souligner ses particularités statistiques. Deuxièmement, nous exposons de façon exhaustive la chaîne de prétraitement et le processus de création de nouvelles entités prédictives (ingénierie des caractéristiques), étape fondamentale qui constitue l'une des contributions majeures de notre étude. Troisièmement, nous détaillons les résultats quantitatifs obtenus, tant pour les modèles individuels que pour les approches combinées (méthodes ensemblistes), en proposant une lecture éclairée de leurs performances.
 
-----------------------------------------------------------------
 \section{Présentation du jeu de données}
 %----------------------------------------------------------------
 
@@ -209,11 +207,9 @@ Le protocole permettant d'attester de la fiabilité et de la force de générali
 
 Enfin, une étape extrêmement critique en science médicale repose sur l'approche de révision empirique des seuils probabilistes de discrimination. Les frontières théoriques ne sont plus confinées à la valeur neutre de 0,5 mais sont modulées unitairement sur l'ensemble modélisé afin de maximiser rigoureusement le point de crête de la métrique F1 (moyenne harmonique synthétisant le rapport Précision et Rappel).
 
-\subsection{Exploration multidimensionnelle via Optuna}
+\subsection{Configuration des hyperparamètres}
 
-Oubliant les méthodes naïves d'exploration spatiale de type grille exhaustive, nous avons orienté l'intégralité de la quête des hyperparamètres vers l'environnement très évolué \textbf{Optuna}. Cette infrastructure moderne orchestre les recherches mathématiques par les processus des approximateurs de Parzen structurés en arborisation probabiliste (TPE).
-
-L'architecture du classificateur SVM (reposant sur l'induction gaussienne RBF) fut criblée sur 100 itérations séquentielles afin de définir rigoureusement la pénalité $C$ et le coefficient sphérique $\gamma$, aboutissant à des optimas fixés à $C = 2.70$ et $\gamma = 0.585$. Quant à la méthode d'assemblage des forêts arborescentes (Random Forest), l'espace hyper-complexe des fractionnements et des limites hiérarchiques fut traversé en long et en large sur un cycle de 150 explorations. Enfin, l'architecture colossale de XGBoost, riche de très multiples degrés de tension numérique (relatifs aux pénalisations mathématiques et aux coefficients d'érosion algorithmiques), a imposé au minimum 200 évaluations massives pour trouver sa configuration optimale.
+Au lieu d'utiliser des méthodes d'exploration spatiale exhaustives, nous avons évalué ces modèles dans leur configuration de base (Baseline) avec les hyperparamètres par défaut proposés par \texttt{scikit-learn} et \texttt{XGBoost}. Cette démarche permet d'établir une ligne de base robuste et de démontrer la capacité discriminatoire des algorithmes avant toute optimisation complexe. L'architecture SVM repose sur l'induction gaussienne RBF avec $C = 1.0$ et $\gamma = \text{'scale'}$. Le Random Forest s'appuie sur une trame arborescente de 100 arbres de décision, tandis que XGBoost conserve également 100 estimateurs avec une profondeur maximale fixée à 6.
 
 %----------------------------------------------------------------
 \section{Évaluation systématique des algorithmes isolés}
@@ -232,16 +228,16 @@ S'appuyant intimement sur la transformation des vecteurs de Yeats-Johnson corré
         \hline
         \textbf{Indicateur évaluatif} & \textbf{Constat chiffré} \\
         \hline
-        Exactitude générale (\textit{Accuracy}) & 0.8052 \\
-        Mesure d'harmonie (F1-Score) & 0.7000 \\
-        Proportion discriminatoire (AUC-ROC) & 0.8589 \\
-        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.8714 \pm 0.0442$ \\
-        Ligne de démarcation optimale (Seuil) & 0.339 \\
+        Exactitude générale (\textit{Accuracy}) & 0.8377 \\
+        Mesure d'harmonie (F1-Score) & 0.7863 \\
+        Proportion discriminatoire (AUC-ROC) & 0.9017 \\
+        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.8972 \pm 0.0439$ \\
+        Ligne de démarcation optimale (Seuil) & 0.435 \\
         \hline
     \end{tabular}
 \end{table}
 
-Alors qu'une base discriminatoire (repérée par l'aire de 0.859) manifeste d'évidentes capacités de classement, la détresse du F1-Score (effondré à 0.700) souligne la difficulté chronique du système affineur à dépister les cas avérés de la pathologie. La contrainte du réglage probabiliste (recalculé drastiquement en deçà, à la cote singulière de 0.339) atteste fondamentalement d'une architecture intrinsèquement désorientée par le déséquilibre des probabilités asymétriques issues du modèle gaussien.
+Alors qu'une base discriminatoire reconnue (repérée par l'aire de 0.902) manifeste d'évidentes capacités de classement, le F1-Score (0.786) souligne une difficulté résiduelle pour le système affineur à dépister l'ensemble des cas avérés de la pathologie. La contrainte du réglage probabiliste (recalculé en deçà, à la cote singulière de 0.435) atteste fondamentalement d'une architecture intrinsèquement désorientée par le déséquilibre des probabilités asymétriques issues du modèle gaussien.
 
 \subsection{Évaluation du groupement d'arbres décisionnels (Random Forest)}
 
@@ -256,20 +252,20 @@ Se déployant sur une trame arborescente densifiée de multiples nœuds de fract
         \hline
         \textbf{Indicateur évaluatif} & \textbf{Constat chiffré} \\
         \hline
-        Exactitude générale (\textit{Accuracy}) & 0.8896 \\
-        Mesure d'harmonie (F1-Score) & 0.8440 \\
-        Proportion discriminatoire (AUC-ROC) & 0.9453 \\
-        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.9378 \pm 0.0242$ \\
-        Ligne de démarcation optimale (Seuil) & 0.549 \\
+        Exactitude générale (\textit{Accuracy}) & 0.8831 \\
+        Mesure d'harmonie (F1-Score) & 0.8393 \\
+        Proportion discriminatoire (AUC-ROC) & 0.9443 \\
+        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.9359 \pm 0.0249$ \\
+        Ligne de démarcation optimale (Seuil) & 0.490 \\
         \hline
     \end{tabular}
 \end{table}
 
-Flirtant presque continuellement au-delà des 0.94 de discrimination empirique, ce regroupement décisionnel affiche des statistiques d'exception. De plus, l'intervalle restrictif décelé aux marges d'erreur liées à la double vérification croisée confirme sans ambiguïté la fiabilité structurelle de la randomisation ensembliste.
+Flirtant aux alentours de 0.944 de discrimination empirique, ce regroupement décisionnel affiche des statistiques de très haut niveau. De plus, l'intervalle restrictif décelé aux marges d'erreur liées à la double vérification croisée confirme sans ambiguïté la fiabilité structurelle de la randomisation ensembliste.
 
 \subsection{Déploiement évaluatif de XGBoost}
 
-Désormais promu en qualité de standard absolu parmi la sphère algorithmique dédiée aux bases matricielles, le modèle de boosting de complexité extrême (XGBoost), dont les hyperparamètres ont été scrutés impitoyablement à travers le maillage Optuna, prend logiquement l'ascendant.
+Désormais promu en qualité de standard absolu parmi la sphère algorithmique dédiée aux bases matricielles, le modèle de boosting de complexité extrême (XGBoost), évalué avec ses paramètres de performance standard, prend logiquement l'ascendant.
 
 \begin{table}[htbp]
     \centering
@@ -280,11 +276,11 @@ Désormais promu en qualité de standard absolu parmi la sphère algorithmique d
         \hline
         \textbf{Indicateur évaluatif} & \textbf{Constat chiffré} \\
         \hline
-        Exactitude générale (\textit{Accuracy}) & 0.8896 \\
-        Mesure d'harmonie (F1-Score) & 0.8440 \\
-        Proportion discriminatoire (AUC-ROC) & \textbf{0.9496} \\
-        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.9442 \pm 0.0235$ \\
-        Ligne de démarcation optimale (Seuil) & 0.639 \\
+        Exactitude générale (\textit{Accuracy}) & 0.8961 \\
+        Mesure d'harmonie (F1-Score) & 0.8571 \\
+        Proportion discriminatoire (AUC-ROC) & \textbf{0.9531} \\
+        Fiabilité croisée (CV AUC 10-fold $\times$ 3) & $0.9394 \pm 0.0256$ \\
+        Ligne de démarcation optimale (Seuil) & 0.473 \\
         \hline
     \end{tabular}
 \end{table}
@@ -296,7 +292,7 @@ Désormais promu en qualité de standard absolu parmi la sphère algorithmique d
     \label{fig:confusion_matrices}
 \end{figure}
 
-Les capacités du modèle s'incarnent parfaitement dans les matrices chiffrées (voir figure~\ref{fig:confusion_matrices}). L'agglomération algorithmique du XGBoost engendre un succès exceptionnel lors de l'isolement pathologique de la cohorte mineure. Cette performance technique, atteignant plus de 85,19\% de détection réelle des individus atteints, soulage par voie de conséquence la crainte des faux négatifs préjudiciables. En effet, dans la clinique journalière du praticien médical, accuser une non-détection d'une situation avérée a des implications considérablement plus fâcheuses qu'un doute provisoire non fondé (faux positif).
+Les capacités du modèle s'incarnent parfaitement dans les matrices chiffrées (voir figure~\ref{fig:confusion_matrices}). L'agglomération algorithmique du XGBoost engendre un succès exceptionnel lors de l'isolement pathologique de la cohorte mineure. Cette performance technique, atteignant plus de 88,89\% de détection réelle des individus atteints, soulage par voie de conséquence la crainte des faux négatifs préjudiciables. En effet, dans la clinique journalière du praticien médical, accuser une non-détection d'une situation avérée a des implications considérablement plus fâcheuses qu'un doute provisoire non fondé (faux positif).
 
 \begin{figure}[htbp]
     \centering
@@ -313,7 +309,7 @@ L'inspection géométrique globale des taux d'omissions en fonction des classifi
 
 Afin d'ausculter l'ultime marge de progression, d'audacieuses combinaisons tentant la fusion synchrone des trois précurseurs ont été entreprises.
 
-Sous sa forme dite \textit{Soft Voting}, l'algorithme a harmonisé collégialement la projection de certitude des trois moteurs distincts (SVM, Random Forest et XGBoost). Il parvient in fine à un seuil discriminatoire s'élevant très fidèlement à 0.932 et consolide l'indice F1-score au point optimal de 0.845. Concrètement, cette approche offre une résilience louable car très réactive grâce au consensus multilatéral des estimateurs.
+Sous sa forme dite \textit{Soft Voting}, l'algorithme a harmonisé collégialement la projection de certitude des trois moteurs distincts (SVM, Random Forest et XGBoost). Il parvient in fine à un seuil discriminatoire global à 0.937 et consolide l'indice F1-score au point optimal de 0.847. Concrètement, cette approche offre une résilience louable car très réactive grâce au consensus multilatéral des estimateurs.
 
 Les architectures de classe \textit{Stacking}, plus exigeantes théoriquement, structurent la chaîne algorithmique en soumettant les outputs prédictifs rudimentaires vers des méta-apprenants régulateurs. 
-D'un côté, lorsque le régulateur principal s'incarne en un analyseur logistique primitif (Régression Logistique), le modèle cumule 0.929 de taux d'AUC globale. D'un autre côté, en convoquant un deuxième étage d'architecture poussée combinant à nouveau XGBoost avec accès perméable, le taux final de l'aire culmine timidement à l'indice 0.939, ce qui limite globalement l'utilité pratique d'un tel empilement computationnel démesuré comparé au modèle individuel optimal.
+Ici, le régulateur principal s'incarne en un analyseur logistique primitif (Régression Logistique). Le modèle cumule 0.948 de taux d'AUC globale et un F1-score de 0.847. Bien que remarquables, ces scores indiquent qu'un tel empilement computationnel s'aligne de très près sans surpasser la simplicité d'un algorithme XGBoost singulier.
