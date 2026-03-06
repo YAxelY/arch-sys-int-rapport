@@ -18949,8 +18949,13 @@ endobj
 <<
 /Producer (MiKTeX pdfTeX-1.40.27)
 /Author()/Title()/Subject()/Creator(LaTeX with hyperref)/Keywords()
+<<<<<<< HEAD:main.pdf
+/CreationDate (D:20260223070116+01'00')
+/ModDate (D:20260223070116+01'00')
+=======
 /CreationDate (D:20260220022238+01'00')
 /ModDate (D:20260220022238+01'00')
+>>>>>>> cab76c5a48e54d0103a47318d209eef236f87ed6:main-final.pdf
 /Trapped /False
 /PTEX.Fullbanner (This is MiKTeX-pdfTeX 4.21.0 (1.40.27))
 >>
@@ -20696,10 +20701,17 @@ xref
 0002066183 00000 n 
 0002066365 00000 n 
 trailer
+<<<<<<< HEAD:main.pdf
+<< /Size 1791
+/Root 1789 0 R
+/Info 1790 0 R
+/ID [<F1A29F395C9DB314976E1166349C64AC> <F1A29F395C9DB314976E1166349C64AC>] >>
+=======
 << /Size 1738
 /Root 1736 0 R
 /Info 1737 0 R
 /ID [<33BA5C6EC7853434FEE8EA7BE0B97EBE> <33BA5C6EC7853434FEE8EA7BE0B97EBE>] >>
+>>>>>>> cab76c5a48e54d0103a47318d209eef236f87ed6:main-final.pdf
 startxref
 2066640
 %%EOF
